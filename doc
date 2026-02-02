@@ -1,0 +1,409 @@
+package ca.cooperators.cc.document.docustore
+
+uses ca.cooperators.cc.document.Item
+uses ca.cooperators.cc.document.enterpriseOnbase.EntOnBaseDocumentWrapper
+uses ca.cooperators.cc.document.enterpriseOnbase.EntOnBaseKeywords
+uses ca.cooperators.cc.integration.authentication.OAuthTokenAuthorizer
+uses ca.cooperators.cc.logging.ApplicationLogger
+uses ca.cooperators.cc.runtimeproperties.RuntimePropertiesGroups
+uses ca.cooperators.csi.cooputils.PerformanceLoggingMonitor
+uses ca.cooperators.csi.integration.util.SqlDateUtil
+uses gw.plugin.Plugins
+uses gw.restclient.config.Config
+uses gwgen.docustore.api.DocumentApi
+uses gwgen.docustore.model.KeywordModel
+uses gwgen.docustore.model.UpdateModel
+uses org.openapitools.jackson.nullable.JsonNullable
+
+uses javax.net.ssl.HttpsURLConnection
+uses java.io.BufferedReader
+uses java.io.InputStream
+uses java.io.InputStreamReader
+uses java.net.URI
+uses java.net.URL
+uses java.net.http.HttpClient
+uses java.time.OffsetDateTime
+uses java.time.format.DateTimeFormatter
+uses java.util.concurrent.TimeUnit
+uses java.util.concurrent.locks.ReentrantLock
+
+/**
+ * Handles all document-related operations with the DocuStore service.
+ * This includes retrieving document contents, removing documents, updating metadata, and storing new documents.
+ * CM-7862 - Docustore implementation
+ */
+class DocustoreRequestHandler {
+  private static final var LOGGER = ApplicationLogger.ONBASE
+  private static final var RUNTIME_PROPERTIES_GROUP = RuntimePropertiesGroups.RP_WS_DOCUSTORE
+  private static final var TOKEN_REFRESH_LOCK = new ReentrantLock()
+  public static final var DATE_PATTERN : String = "yyyy-MM-dd'T'HH:mm'Z'"
+  private static var _cachedAuthToken : String as CachedToken = null
+  private static var _tokenExpirationTime : long = 0
+
+  // Configuration property keys
+  private static final var PROP_DOCUSTORE_URL = "Url"
+  private static final var PROP_TOKEN_URL = "tokenUri"
+  private static final var PROP_TOKEN_SCOPE = "scope"
+  private static final var PROP_TOKEN_EXPIRE_IN = "tokenExpireIn"
+
+  private static final var POST = "POST"
+  private static final var PATCH = "PATCH"
+
+  /**
+   * Retrieves the contents of a document from DocuStore.
+   * @param documentId The unique identifier of the document to retrieve
+   * @return EntOnBaseDocumentWrapper containing the document data
+   * @throws IllegalArgumentException if documentId is invalid
+   * @throws Exception if there's an error retrieving the document
+   */
+  public static function getDocumentContents(documentId : String) : EntOnBaseDocumentWrapper {
+    validateDocumentId(documentId)
+    var documentWrapper = new EntOnBaseDocumentWrapper()
+    var apiConfiguration = createApiConfiguration()
+    var documentApiClient = apiConfiguration.buildAPI(DocumentApi)
+
+    var documentBytes = executeWithMonitoring(
+        "EnterpriseDocustoreV1DocumentDocumentIdBytesGet",
+        "Fetching document with ID: ${documentId}",
+        \-> documentApiClient.enterpriseDocustoreV1DocumentDocumentIdBytesGet(Long.parseLong(documentId))
+    )
+
+    documentWrapper.Data = documentBytes
+    return documentWrapper
+  }
+
+  public static function getEntOnbaseUID(documentId : String, docTypes : ArrayList<String>) : String {
+    validateDocumentId(documentId)
+
+    var originalIdKeyword = new Item(EntOnBaseKeywords.ORIGIN_ID, documentId)
+
+    var serviceDelegate = new DocustoreQueriesDelegator("docustore", {originalIdKeyword}, docTypes)
+
+    var response = serviceDelegate.callService()
+    return response.DocID.toString()
+
+  }
+
+    /**
+     * Removes a document from DocuStore.
+     * @param documentId The unique identifier of the document to remove
+     * @throws IllegalArgumentException if documentId is invalid
+     * @throws Exception if there's an error removing the document
+     */
+  public static function removeDocument(documentId : String) {
+    validateDocumentId(documentId)
+    var apiConfiguration = createApiConfiguration()
+    var documentApiClient = apiConfiguration.buildAPI(DocumentApi)
+
+    executeWithMonitoring(
+        "EnterpriseDocustoreV1DocumentDocumentIdDelete",
+        "Removing document with ID: ${documentId}",
+        \-> {
+          documentApiClient.enterpriseDocustoreV1DocumentDocumentIdDelete(Long.parseLong(documentId))
+          return null
+        }
+    )
+  }
+
+  /**
+   * Updates metadata for an existing document in DocuStore.
+   * @param documentId The unique identifier of the document to update
+   * @param keywordItems List of keyword items to update
+   * @return boolean indicating success
+   * @throws Exception if there's an error updating the document metadata
+   */
+  public static function updateDocumentMetadata(documentDate : Date,
+                                                documentId : String,
+                                                keywordItems : List<Item>,
+                                                documentTypeId : String,
+                                                docExtention : String) : boolean {
+    validateDocumentId(documentId)
+    var apiConfiguration = createApiConfiguration()
+    var documentApiClient = apiConfiguration.buildAPI(DocumentApi)
+
+    executeWithMonitoring(
+        "UpdateDocumentMetadata",
+        "Updating metadata for document ID: ${documentId}",
+        \-> {
+          var updatemodel = getUpdateModel(documentDate, keywordItems, documentTypeId, docExtention)
+          documentApiClient.enterpriseDocustoreV1DocumentDocumentIdPut(Long.parseLong(documentId), updatemodel)
+          return true
+        }
+    )
+    return true
+  }
+
+  /**
+   * Updates metadata for an existing document in DocuStore.
+   * @param documentId The unique identifier of the document to update
+   * @param keywordItems List of keyword items to update
+   * @return boolean indicating success
+   * @throws Exception if there's an error updating the document metadata
+   */
+  public static function updateDocument(documentStream : InputStream, documentKeywords : List<Item>, fileType : String, documentTypeId : String, documentDate : String, documentId : String, fileName : String, mimeType : String) : String {
+    if (documentStream == null) {
+      throw new IllegalArgumentException("Document stream cannot be null")
+    }
+    if (documentKeywords == null) {
+      throw new IllegalArgumentException("Document keywords cannot be null")
+    }
+
+    var multipartBoundary = Long.toHexString(System.currentTimeMillis())
+    var baseServiceUrl = RUNTIME_PROPERTIES_GROUP.getStringProperty(PROP_DOCUSTORE_URL)
+    var documentUploadUrl = new URI("${baseServiceUrl}/enterprise-docustore/v1/document/${documentId}").toURL()
+    var httpConnection = createMultipartConnection(documentUploadUrl, multipartBoundary, POST)
+    var fileTypeCode = getFileTypeId(fileType)
+
+    try {
+      var multipartBuilder = new MultipartBuilder(httpConnection.OutputStream, multipartBoundary)
+
+      // Add document content
+      var documentContent = documentStream.readAllBytes()
+      multipartBuilder.addFilePart("document", "${fileName}.${fileType}", mimeType, documentContent)
+
+      // Add keywords
+      documentKeywords.each(\keyword -> {
+        var keywordJson = "{\"typeId\":${keyword.getID()},\"value\":\"${keyword.getName().replace("\"", "\\\"")}\"}"
+        multipartBuilder.addTextPart("keywords", keywordJson)
+      })
+
+      // Add metadata
+      multipartBuilder.addTextPart("documentTypeId", documentTypeId)
+      multipartBuilder.addTextPart("fileTypeId", fileTypeCode)
+      multipartBuilder.addTextPart("documentDate", documentDate)
+      multipartBuilder.finish()
+
+      var httpResponseCode = httpConnection.ResponseCode
+      if (httpResponseCode == 200) {
+        return readHttpResponse(httpConnection, false)
+      } else {
+        var errorResponse = readHttpResponse(httpConnection, true)
+        LOGGER.error(errorResponse, #storeDocument(InputStream, String, String, String, List<Item>, String, String))
+        throw new Exception("Failed to update document. Status: ${httpResponseCode}, Error: ${errorResponse}")
+      }
+
+    } finally {
+      httpConnection.disconnect()
+    }
+  }
+
+  /**
+   * Stores a new document in DocuStore.
+   * @param documentStream The input stream containing the document data
+   * @param fileType The type of the file (e.g., "pdf", "docx")
+   * @param documentTypeId The document type identifier
+   * @param documentDate The date of the document in string format
+   * @param documentKeywords List of keyword items associated with the document
+   * @param documentName The name of the document
+   * @return String containing the document ID or reference
+   * @throws Exception if there's an error storing the document
+   */
+  public static function storeDocument(documentStream : InputStream, fileType : String, documentTypeId : String, documentDate : String, documentKeywords : List<Item>, documentName : String, mimeType : String ) : String {
+    if (documentStream == null) {
+      throw new IllegalArgumentException("Document stream cannot be null")
+    }
+    if (documentKeywords == null) {
+      throw new IllegalArgumentException("Document keywords cannot be null")
+    }
+
+    var multipartBoundary = Long.toHexString(System.currentTimeMillis())
+    var baseServiceUrl = RUNTIME_PROPERTIES_GROUP.getStringProperty(PROP_DOCUSTORE_URL)
+    var documentUploadUrl = new URI("${baseServiceUrl}/enterprise-docustore/v1/document/upload").toURL()
+    var httpConnection = createMultipartConnection(documentUploadUrl, multipartBoundary, POST)
+    var fileTypeCode = getFileTypeId(fileType)
+
+    try {
+      var multipartBuilder = new MultipartBuilder(httpConnection.OutputStream, multipartBoundary)
+
+        // Add document content
+        var documentContent = documentStream.readAllBytes()
+        multipartBuilder.addFilePart("document", "${documentName}.${fileType}", mimeType, documentContent)
+
+        // Add keywords
+        documentKeywords.each(\keyword -> {
+          var keywordJson = "{\"typeId\":${keyword.getID()},\"value\":\"${keyword.getName().replace("\"", "\\\"")}\"}"
+          multipartBuilder.addTextPart("keywords", keywordJson)
+        })
+
+        // Add metadata
+        multipartBuilder.addTextPart("documentTypeId", documentTypeId)
+        multipartBuilder.addTextPart("fileTypeId", fileTypeCode)
+        multipartBuilder.addTextPart("documentDate", documentDate)
+        multipartBuilder.finish()
+
+        var httpResponseCode = httpConnection.ResponseCode
+        if (httpResponseCode == 200) {
+          return readHttpResponse(httpConnection, false)
+        } else {
+          var errorResponse = readHttpResponse(httpConnection, true)
+          LOGGER.error(errorResponse, #storeDocument(InputStream, String, String, String, List<Item>, String, String))
+          throw new Exception("Failed to store document. Status: ${httpResponseCode}, Error: ${errorResponse}")
+        }
+
+    } finally {
+      httpConnection.disconnect()
+    }
+  }
+
+  /**
+   * Creates and configures the API client with the necessary authentication.
+   * @return Configured Config instance for API clients
+   */
+  private static function createApiConfiguration() : Config {
+    return Config.builder()
+        .basePath(RUNTIME_PROPERTIES_GROUP.getStringProperty(PROP_DOCUSTORE_URL))
+        .interceptor(\request -> {
+          request.header("Content-Type", {"application/json; charset=utf-8"})
+          request.header("accept-encoding", {"UTF-8"})
+          request.header("Authorization", {"Bearer ${getAuthenticationToken()}"})
+        }).logLevel(Config.LogLevel.FULL).loggerName(LOGGER.Name)
+        .build()
+  }
+
+  /**
+   * Executes an operation with performance monitoring.
+   * @param operationName Name of the operation for logging
+   * @param operationDescription Description of the operation
+   * @param operation The operation to execute
+   * @return The result of the operation
+   */
+  private static function executeWithMonitoring<T>(
+      operationName : String,
+      operationDescription : String,
+      operation() : T
+  ) : T {
+    using (new PerformanceLoggingMonitor(operationDescription, "process=\"${operationName}\"")) {
+      return operation()
+    }
+  }
+
+  /**
+   * Creates a multipart HTTP connection for document uploads.
+   */
+  private static function createMultipartConnection(targetUrl : URL, boundary : String, requestMethod : String) : HttpsURLConnection {
+    var connection = targetUrl.openConnection() as HttpsURLConnection
+    connection.setDoInput(true)
+    connection.setDoOutput(true)
+    connection.setRequestMethod(requestMethod)
+    connection.setRequestProperty("Content-Type", "multipart/form-data; boundary=${boundary}")
+    connection.setRequestProperty("Authorization", "Bearer ${getAuthenticationToken()}")
+    connection.setRequestProperty("Accept", "application/json")
+    return connection
+  }
+
+  /**
+   * Retrieves an authentication token, using cached token if still valid.
+   * @return Valid authentication token
+   */
+  private static function getAuthenticationToken() : String {
+    if (System.currentTimeMillis() < _tokenExpirationTime) {
+      return _cachedAuthToken
+    }
+
+    if (TOKEN_REFRESH_LOCK.tryLock()) {
+      try {
+        // Double-check in case another thread updated the token while we were waiting
+        if (System.currentTimeMillis() < _tokenExpirationTime) {
+          return _cachedAuthToken
+        }
+
+        var tokenEndpoint = RUNTIME_PROPERTIES_GROUP.getStringProperty(PROP_TOKEN_URL)
+        var tokenScope = RUNTIME_PROPERTIES_GROUP.getStringProperty(PROP_TOKEN_SCOPE)
+        var tokenExpireIn = RUNTIME_PROPERTIES_GROUP.getIntegerProperty(PROP_TOKEN_EXPIRE_IN)
+        var secretKey = RUNTIME_PROPERTIES_GROUP.getStringProperty("secretKey")
+        var credentials = Plugins.get(gw.plugin.credentials.CredentialsPlugin).retrieveUsernameAndPassword(secretKey)
+        var clientId = credentials.Username
+        var clientSecret = credentials.Password
+
+        var tokenService = new OAuthTokenAuthorizer(clientId, clientSecret, tokenScope, tokenEndpoint)
+        _cachedAuthToken = tokenService.retrieveToken()
+
+        _tokenExpirationTime = System.currentTimeMillis() + TimeUnit.MINUTES.toMillis(tokenExpireIn)
+        return _cachedAuthToken
+      } finally {
+        TOKEN_REFRESH_LOCK.unlock()
+      }
+    }
+    if(_cachedAuthToken == null){
+      LOGGER.error("Authentication token not available", #getAuthenticationToken())
+      throw new IllegalStateException("Authentication token not available")
+    }
+      // Another thread is updating the token, wait and return the cached one
+      return _cachedAuthToken
+
+  }
+
+  /**
+   * Reads the response from an HTTP connection.
+   */
+  private static function readHttpResponse(connection : HttpsURLConnection, isErrorStream : boolean) : String {
+    var inputStream = isErrorStream ? connection.ErrorStream : connection.InputStream
+    using (var reader = new BufferedReader(new InputStreamReader(inputStream, "UTF-8"))) {
+      var responseBuilder = new StringBuilder()
+      var currentLine = reader.readLine()
+      while (currentLine != null) {
+        if (currentLine.startsWith("\"") and currentLine.endsWith("\"")) {
+          currentLine = currentLine.substring(1, currentLine.length() - 1); // Remove leading and trailing quotes
+        }
+        responseBuilder.append(currentLine)
+        currentLine = reader.readLine()
+      }
+      return responseBuilder.toString()
+    }
+  }
+
+  /**
+   * Validates that a document ID is not null and is a valid number.
+   * @param documentId The document ID to validate
+   * @throws IllegalArgumentException if the document ID is invalid
+   */
+  private static function validateDocumentId(documentId : String) {
+    if (documentId == null || documentId.trim().isEmpty()) {
+      throw new IllegalArgumentException("Document ID cannot be null or empty")
+    }
+    try {
+      Long.parseLong(documentId)
+    } catch (e : NumberFormatException) {
+      throw new IllegalArgumentException("Document ID must be a valid number", e)
+    }
+  }
+
+  private static function getUpdateModel(documentDate : Date, keywordItems : List<Item>, documentTypeId : String, docExtention : String) : UpdateModel {
+    var keywords = new ArrayList<KeywordModel>()
+    keywordItems.each(\keyword -> {
+      var keywordmodel = new KeywordModel()
+      keywordmodel.setTypeId(Long.parseLong(keyword.getID()))
+      keywordmodel.setValue(keyword.getName())
+      keywords.add(keywordmodel)
+    })
+    var updatemodel = new UpdateModel()
+    updatemodel.setDocumentDate_JsonNullable(null)
+    updatemodel.setKeywords(keywords)
+    updatemodel.setTargetDocTypeId(Long.parseLong(documentTypeId))
+    updatemodel.setTargetFileTypeId(Long.parseLong(getFileTypeId(docExtention)))
+    return updatemodel
+  }
+
+  /**
+   * Pull the file type id from runtime properties, throw and exception if the file extension is empty or not supported
+   * @param docExtension
+   * @return the file type id as a string
+   */
+  private static function getFileTypeId(docExtension : String) : String{
+    var fileTypeId : String
+    if(docExtension == null or docExtension.Empty){
+      LOGGER.error("File extension cannot be null or empty", #getFileTypeId())
+      throw new IllegalArgumentException("File extension cannot be null or empty")
+    } else{
+      fileTypeId = RUNTIME_PROPERTIES_GROUP.getStringProperty(docExtension.toUpperCase())
+
+      if(fileTypeId == null or fileTypeId.Empty){
+        LOGGER.error("File extension not defined", #getFileTypeId())
+        throw new IllegalArgumentException("File extension not defined")
+      }
+
+    }
+
+    return fileTypeId
+  }
+}
