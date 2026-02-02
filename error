@@ -1,1 +1,484 @@
-feign.FeignException$NotImplemented: [501 Not Implemented] during [DELETE] to [https://uat.enterprise-docustore.cooperators.ca/enterprise-docustore/v1/document/48070939] [DocumentApi#enterpriseDocustoreV1DocumentDocumentIdDelete(Long)]: [<HTML><HEAD> <TITLE>Unsupported Request</TITLE> </HEAD><BODY> <H1>Unsupported Request</H1> DELETE to http&#58;&#47;&#47;uat&#46;enterprise&#45;docustore&#46;cooperators&#46;ca&#47;enterprise&#45;docus... (434 bytes)] 	at feign.FeignException.serverErrorStatus(FeignException.java:261) 	at feign.FeignException.errorStatus(FeignException.java:206) 	at feign.FeignException.errorStatus(FeignException.java:194) 	at feign.codec.ErrorDecoder$Default.decode(ErrorDecoder.java:103) 	at feign.InvocationContext.decodeError(InvocationContext.java:126) 	at feign.InvocationContext.proceed(InvocationContext.java:72) 	at feign.ResponseHandler.handleResponse(ResponseHandler.java:63) 	at feign.SynchronousMethodHandler.executeAndDecode(SynchronousMethodHandler.java:114) 	at feign.SynchronousMethodHandler.invoke(SynchronousMethodHandler.java:70) 	at feign.ReflectiveFeign$FeignInvocationHandler.invoke(ReflectiveFeign.java:99) 	at jdk.proxy7/jdk.proxy7.$Proxy218.enterpriseDocustoreV1DocumentDocumentIdDelete(Unknown Source) 	at java.base/jdk.internal.reflect.DirectMethodHandleAccessor.invoke(DirectMethodHandleAccessor.java:103) 	at java.base/java.lang.reflect.Method.invoke(Method.java:580) 	at gw.restclient.RestClient.lambda$invokeMethod$1(RestClient.java:46) 	at com.guidewire.restclient.faulttolerance.FunctionDecorator.applyFunction(FunctionDecorator.java:92) 	at io.vavr.control.Either.fold(Either.java:180) 	at com.guidewire.restclient.faulttolerance.FunctionDecorator.apply(FunctionDecorator.java:97) 	at gw.restclient.RestClient.invokeMethod(RestClient.java:48) 	at gw.restclient.RestClient.lambda$null$c2ee6f2$1(RestClient.java:40) 	at io.vavr.control.Try.of(Try.java:75) 	at gw.restclient.RestClient.lambda$of$0(RestClient.java:39) 	at jdk.proxy7/jdk.proxy7.$Proxy218.enterpriseDocustoreV1DocumentDocumentIdDelete(Unknown Source) 	at ca.cooperators.cc.document.docustore.DocustoreRequestHandler$block_1_.invoke(DocustoreRequestHandler.gs:94) 	at ca.cooperators.cc.document.docustore.DocustoreRequestHandler.executeWithMonitoring(DocustoreRequestHandler.gs:218) 	at ca.cooperators.cc.document.docustore.DocustoreRequestHandler.removeDocument(DocustoreRequestHandler.gs:90) 	at ca.cooperators.cc.document.enterpriseOnbase.EntOnbaseDocumentContentSource.deleteDocumentHandler(EntOnbaseDocumentContentSource.gs:357) 	at ca.cooperators.cc.document.enterpriseOnbase.EntOnbaseDocumentContentSource.removeDocument(EntOnbaseDocumentContentSource.gs:123) 	at ca.cooperators.cc.document.DocumentMessageTransport_CG.processDocumentRemovedEvent(DocumentMessageTransport_CG.gs:446) 	at ca.cooperators.cc.document.DocumentMessageTransport_CG.processEvent(DocumentMessageTransport_CG.gs:193) 	at ca.cooperators.cc.document.DocumentMessageTransport_CG.sendMessage(DocumentMessageTransport_CG.gs:98) 	at ca.cooperators.csi.integration.messaging.base.BaseMessageTransportPlugin.send(BaseMessageTransportPlugin.gs:35) 	at java.base/jdk.internal.reflect.DirectMethodHandleAccessor.invoke(DirectMethodHandleAccessor.java:103) 	at java.base/java.lang.reflect.Method.invoke(Method.java:580) 	at com.guidewire.pl.system.integration.plugins.GosuPluginProxy.invoke(GosuPluginProxy.java:54) 	at jdk.proxy8/jdk.proxy8.$Proxy173.send(Unknown Source) 	at java.base/jdk.internal.reflect.DirectMethodHandleAccessor.invoke(DirectMethodHandleAccessor.java:103) 	at java.base/java.lang.reflect.Method.invoke(Method.java:580) 	at com.guidewire.pl.system.integration.plugins.PluginInvocationHandler.invoke(PluginInvocationHandler.java:51) 	at jdk.proxy8/jdk.proxy8.$Proxy173.send(Unknown Source) 	at com.guidewire.pl.system.integration.messaging.dispatch.MessageWriter.lambda$executeSendAndAfterSendInTxn$1(MessageWriter.java:547) 	at com.guidewire.pl.system.transaction.ScopedUserTransaction.run(ScopedUserTransaction.java:50) 	at com.guidewire.pl.system.transaction.TransactionManagerImpl.execute(TransactionManagerImpl.java:99) 	at com.guidewire.pl.system.integration.messaging.dispatch.AckHelper.executeMessageOperation(AckHelper.java:146) 	at com.guidewire.pl.system.integration.messaging.dispatch.AckHelper.executeMessageOperation(AckHelper.java:130) 	at com.guidewire.pl.system.integration.messaging.dispatch.MessageWriter.executeSendAndAfterSendInTxn(MessageWriter.java:514) 	at com.guidewire.pl.system.integration.messaging.dispatch.MessageWriter.sendNextMessage(MessageWriter.java:408) 	at com.guidewire.pl.system.integration.messaging.dispatch.MessageSenderRunnable.trySendMessage(MessageSenderRunnable.java:119) 	at com.guidewire.pl.system.integration.messaging.dispatch.MessageSenderRunnable.send(MessageSenderRunnable.java:105) 	at com.guidewire.pl.system.integration.messaging.dispatch.MessageSenderRunnable.run(MessageSenderRunnable.java:84) 	at com.guidewire.pl.system.integration.messaging.dispatch.MessageSenderRunnable$GWRunnableAdapter.run(MessageSenderRunnable.java:62) 	at java.base/java.util.concurrent.Executors$RunnableAdapter.call(Executors.java:572) 	at java.base/java.util.concurrent.FutureTask.run(FutureTask.java:317) 	at java.base/java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1144) 	at java.base/java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:642) 	at java.base/java.lang.Thread.run(Thread.java:1583)
+package ca.cooperators.cc.document.docustore
+
+uses ca.cooperators.cc.document.Item
+uses ca.cooperators.cc.document.enterpriseOnbase.EntOnBaseDocumentWrapper
+uses ca.cooperators.cc.document.enterpriseOnbase.EntOnBaseKeywords
+uses ca.cooperators.cc.integration.authentication.OAuthTokenAuthorizer
+uses ca.cooperators.cc.logging.ApplicationLogger
+uses ca.cooperators.cc.runtimeproperties.RuntimePropertiesGroups
+uses ca.cooperators.csi.cooputils.PerformanceLoggingMonitor
+uses gw.plugin.Plugins
+uses gw.restclient.config.Config
+uses gwgen.docustore.api.DocumentApi
+uses gwgen.docustore.model.KeywordModel
+uses gwgen.docustore.model.UpdateModel
+uses org.openapitools.jackson.nullable.JsonNullable
+
+uses java.io.ByteArrayOutputStream
+uses java.io.InputStream
+uses java.net.URI
+uses java.net.http.HttpClient
+uses java.net.http.HttpRequest
+uses java.net.http.HttpResponse
+uses java.nio.charset.StandardCharsets
+uses java.time.Duration
+uses java.util.concurrent.TimeUnit
+uses java.util.concurrent.locks.ReentrantLock
+
+/**
+ * Handles all document-related operations with the DocuStore service.
+ * This includes retrieving document contents, removing documents, updating metadata, and storing new documents.
+ * CM-7862 - Docustore implementation
+ */
+class DocustoreRequestHandler {
+  private static final var LOGGER = ApplicationLogger.ONBASE
+  private static final var RUNTIME_PROPERTIES_GROUP = RuntimePropertiesGroups.RP_WS_DOCUSTORE
+  private static final var TOKEN_REFRESH_LOCK = new ReentrantLock()
+  public static final var DATE_PATTERN : String = "yyyy-MM-dd'T'HH:mm'Z'"
+  private static var _cachedAuthToken : String as CachedToken = null
+  private static var _tokenExpirationTime : long = 0
+  private static var _httpClient : HttpClient = null
+
+  // Configuration property keys
+  private static final var PROP_DOCUSTORE_URL = "Url"
+  private static final var PROP_TOKEN_URL = "tokenUri"
+  private static final var PROP_TOKEN_SCOPE = "scope"
+  private static final var PROP_TOKEN_EXPIRE_IN = "tokenExpireIn"
+
+  private static final var POST = "POST"
+  private static final var PATCH = "PATCH"
+
+  /**
+   * Gets or creates the shared HttpClient instance.
+   */
+  private static function getHttpClient() : HttpClient {
+    if (_httpClient == null) {
+      _httpClient = HttpClient.newBuilder()
+          .version(HttpClient.Version.HTTP_1_1)
+          .connectTimeout(Duration.ofSeconds(30))
+          .build()
+    }
+    return _httpClient
+  }
+
+  /**
+   * Retrieves the contents of a document from DocuStore.
+   * @param documentId The unique identifier of the document to retrieve
+   * @return EntOnBaseDocumentWrapper containing the document data
+   * @throws IllegalArgumentException if documentId is invalid
+   * @throws Exception if there's an error retrieving the document
+   */
+  public static function getDocumentContents(documentId : String) : EntOnBaseDocumentWrapper {
+    validateDocumentId(documentId)
+    var documentWrapper = new EntOnBaseDocumentWrapper()
+    var apiConfiguration = createApiConfiguration()
+    var documentApiClient = apiConfiguration.buildAPI(DocumentApi)
+
+    var documentBytes = executeWithMonitoring(
+        "EnterpriseDocustoreV1DocumentDocumentIdBytesGet",
+        "Fetching document with ID: ${documentId}",
+        \-> documentApiClient.enterpriseDocustoreV1DocumentDocumentIdBytesGet(Long.parseLong(documentId))
+    )
+
+    documentWrapper.Data = documentBytes
+    return documentWrapper
+  }
+
+  public static function getEntOnbaseUID(documentId : String, docTypes : ArrayList<String>) : String {
+    validateDocumentId(documentId)
+
+    var originalIdKeyword = new Item(EntOnBaseKeywords.ORIGIN_ID, documentId)
+
+    var serviceDelegate = new DocustoreQueriesDelegator("docustore", {originalIdKeyword}, docTypes)
+
+    var response = serviceDelegate.callService()
+    return response.DocID.toString()
+  }
+
+  /**
+   * Removes a document from DocuStore.
+   * @param documentId The unique identifier of the document to remove
+   * @throws IllegalArgumentException if documentId is invalid
+   * @throws Exception if there's an error removing the document
+   */
+  public static function removeDocument(documentId : String) {
+    validateDocumentId(documentId)
+    var apiConfiguration = createApiConfiguration()
+    var documentApiClient = apiConfiguration.buildAPI(DocumentApi)
+
+    executeWithMonitoring(
+        "EnterpriseDocustoreV1DocumentDocumentIdDelete",
+        "Removing document with ID: ${documentId}",
+        \-> {
+          documentApiClient.enterpriseDocustoreV1DocumentDocumentIdDelete(Long.parseLong(documentId))
+          return null
+        }
+    )
+  }
+
+  /**
+   * Updates metadata for an existing document in DocuStore.
+   * @param documentId The unique identifier of the document to update
+   * @param keywordItems List of keyword items to update
+   * @return boolean indicating success
+   * @throws Exception if there's an error updating the document metadata
+   */
+  public static function updateDocumentMetadata(documentDate : Date,
+                                                documentId : String,
+                                                keywordItems : List<Item>,
+                                                documentTypeId : String,
+                                                docExtention : String) : boolean {
+    validateDocumentId(documentId)
+    var apiConfiguration = createApiConfiguration()
+    var documentApiClient = apiConfiguration.buildAPI(DocumentApi)
+
+    executeWithMonitoring(
+        "UpdateDocumentMetadata",
+        "Updating metadata for document ID: ${documentId}",
+        \-> {
+          var updatemodel = getUpdateModel(documentDate, keywordItems, documentTypeId, docExtention)
+          documentApiClient.enterpriseDocustoreV1DocumentDocumentIdPut(Long.parseLong(documentId), updatemodel)
+          return true
+        }
+    )
+    return true
+  }
+
+  /**
+   * Updates an existing document in DocuStore with new content.
+   * @param documentStream The input stream containing the document data
+   * @param documentKeywords List of keyword items associated with the document
+   * @param fileType The type of the file (e.g., "pdf", "docx")
+   * @param documentTypeId The document type identifier
+   * @param documentDate The date of the document in string format
+   * @param documentId The unique identifier of the document to update
+   * @param fileName The name of the document
+   * @param mimeType The MIME type of the document
+   * @return String containing the response from the server
+   * @throws Exception if there's an error updating the document
+   */
+  public static function updateDocument(documentStream : InputStream, 
+                                       documentKeywords : List<Item>, 
+                                       fileType : String, 
+                                       documentTypeId : String, 
+                                       documentDate : String, 
+                                       documentId : String, 
+                                       fileName : String, 
+                                       mimeType : String) : String {
+    if (documentStream == null) {
+      throw new IllegalArgumentException("Document stream cannot be null")
+    }
+    if (documentKeywords == null) {
+      throw new IllegalArgumentException("Document keywords cannot be null")
+    }
+
+    var multipartBoundary = Long.toHexString(System.currentTimeMillis())
+    var baseServiceUrl = RUNTIME_PROPERTIES_GROUP.getStringProperty(PROP_DOCUSTORE_URL)
+    var documentUploadUrl = "${baseServiceUrl}/enterprise-docustore/v1/document/${documentId}"
+    var fileTypeCode = getFileTypeId(fileType)
+
+    try {
+      var documentContent = documentStream.readAllBytes()
+      var multipartBody = buildMultipartBody(
+          multipartBoundary,
+          documentContent,
+          fileName,
+          fileType,
+          mimeType,
+          documentKeywords,
+          documentTypeId,
+          fileTypeCode,
+          documentDate
+      )
+
+      var request = HttpRequest.newBuilder()
+          .uri(URI.create(documentUploadUrl))
+          .header("Content-Type", "multipart/form-data; boundary=${multipartBoundary}")
+          .header("Authorization", "Bearer ${getAuthenticationToken()}")
+          .header("Accept", "application/json")
+          .method(PATCH, HttpRequest.BodyPublishers.ofByteArray(multipartBody))
+          .timeout(Duration.ofMinutes(5))
+          .build()
+
+      var response = getHttpClient().send(request, HttpResponse.BodyHandlers.ofString())
+      
+      if (response.statusCode() == 200) {
+        return cleanJsonResponse(response.body())
+      } else {
+        var errorMessage = "Failed to update document. Status: ${response.statusCode()}, Error: ${response.body()}"
+        LOGGER.error(errorMessage, #updateDocument(InputStream, List<Item>, String, String, String, String, String, String))
+        throw new Exception(errorMessage)
+      }
+    } catch (e : Exception) {
+      LOGGER.error("Error updating document: ${e.Message}", e, #updateDocument(InputStream, List<Item>, String, String, String, String, String, String))
+      throw e
+    }
+  }
+
+  /**
+   * Stores a new document in DocuStore.
+   * @param documentStream The input stream containing the document data
+   * @param fileType The type of the file (e.g., "pdf", "docx")
+   * @param documentTypeId The document type identifier
+   * @param documentDate The date of the document in string format
+   * @param documentKeywords List of keyword items associated with the document
+   * @param documentName The name of the document
+   * @param mimeType The MIME type of the document
+   * @return String containing the document ID or reference
+   * @throws Exception if there's an error storing the document
+   */
+  public static function storeDocument(documentStream : InputStream, 
+                                      fileType : String, 
+                                      documentTypeId : String, 
+                                      documentDate : String, 
+                                      documentKeywords : List<Item>, 
+                                      documentName : String, 
+                                      mimeType : String) : String {
+    if (documentStream == null) {
+      throw new IllegalArgumentException("Document stream cannot be null")
+    }
+    if (documentKeywords == null) {
+      throw new IllegalArgumentException("Document keywords cannot be null")
+    }
+
+    var multipartBoundary = Long.toHexString(System.currentTimeMillis())
+    var baseServiceUrl = RUNTIME_PROPERTIES_GROUP.getStringProperty(PROP_DOCUSTORE_URL)
+    var documentUploadUrl = "${baseServiceUrl}/enterprise-docustore/v1/document/upload"
+    var fileTypeCode = getFileTypeId(fileType)
+
+    try {
+      var documentContent = documentStream.readAllBytes()
+      var multipartBody = buildMultipartBody(
+          multipartBoundary,
+          documentContent,
+          documentName,
+          fileType,
+          mimeType,
+          documentKeywords,
+          documentTypeId,
+          fileTypeCode,
+          documentDate
+      )
+
+      var request = HttpRequest.newBuilder()
+          .uri(URI.create(documentUploadUrl))
+          .header("Content-Type", "multipart/form-data; boundary=${multipartBoundary}")
+          .header("Authorization", "Bearer ${getAuthenticationToken()}")
+          .header("Accept", "application/json")
+          .POST(HttpRequest.BodyPublishers.ofByteArray(multipartBody))
+          .timeout(Duration.ofMinutes(5))
+          .build()
+
+      var response = getHttpClient().send(request, HttpResponse.BodyHandlers.ofString())
+      
+      if (response.statusCode() == 200) {
+        return cleanJsonResponse(response.body())
+      } else {
+        var errorMessage = "Failed to store document. Status: ${response.statusCode()}, Error: ${response.body()}"
+        LOGGER.error(errorMessage, #storeDocument(InputStream, String, String, String, List<Item>, String, String))
+        throw new Exception(errorMessage)
+      }
+    } catch (e : Exception) {
+      LOGGER.error("Error storing document: ${e.Message}", e, #storeDocument(InputStream, String, String, String, List<Item>, String, String))
+      throw e
+    }
+  }
+
+  /**
+   * Builds the multipart/form-data body for document upload.
+   */
+  private static function buildMultipartBody(boundary : String,
+                                            documentContent : byte[],
+                                            fileName : String,
+                                            fileType : String,
+                                            mimeType : String,
+                                            keywords : List<Item>,
+                                            documentTypeId : String,
+                                            fileTypeCode : String,
+                                            documentDate : String) : byte[] {
+    var outputStream = new ByteArrayOutputStream()
+    var CRLF = "\r\n"
+
+    try {
+      // Add document file part
+      outputStream.write("--${boundary}${CRLF}".getBytes(StandardCharsets.UTF_8))
+      outputStream.write("Content-Disposition: form-data; name=\"document\"; filename=\"${fileName}.${fileType}\"${CRLF}".getBytes(StandardCharsets.UTF_8))
+      outputStream.write("Content-Type: ${mimeType}${CRLF}${CRLF}".getBytes(StandardCharsets.UTF_8))
+      outputStream.write(documentContent)
+      outputStream.write(CRLF.getBytes(StandardCharsets.UTF_8))
+
+      // Add keywords
+      keywords.each(\keyword -> {
+        var keywordJson = "{\"typeId\":${keyword.getID()},\"value\":\"${keyword.getName().replace("\"", "\\\"")}\"}"
+        outputStream.write("--${boundary}${CRLF}".getBytes(StandardCharsets.UTF_8))
+        outputStream.write("Content-Disposition: form-data; name=\"keywords\"${CRLF}${CRLF}".getBytes(StandardCharsets.UTF_8))
+        outputStream.write(keywordJson.getBytes(StandardCharsets.UTF_8))
+        outputStream.write(CRLF.getBytes(StandardCharsets.UTF_8))
+      })
+
+      // Add documentTypeId
+      outputStream.write("--${boundary}${CRLF}".getBytes(StandardCharsets.UTF_8))
+      outputStream.write("Content-Disposition: form-data; name=\"documentTypeId\"${CRLF}${CRLF}".getBytes(StandardCharsets.UTF_8))
+      outputStream.write(documentTypeId.getBytes(StandardCharsets.UTF_8))
+      outputStream.write(CRLF.getBytes(StandardCharsets.UTF_8))
+
+      // Add fileTypeId
+      outputStream.write("--${boundary}${CRLF}".getBytes(StandardCharsets.UTF_8))
+      outputStream.write("Content-Disposition: form-data; name=\"fileTypeId\"${CRLF}${CRLF}".getBytes(StandardCharsets.UTF_8))
+      outputStream.write(fileTypeCode.getBytes(StandardCharsets.UTF_8))
+      outputStream.write(CRLF.getBytes(StandardCharsets.UTF_8))
+
+      // Add documentDate
+      outputStream.write("--${boundary}${CRLF}".getBytes(StandardCharsets.UTF_8))
+      outputStream.write("Content-Disposition: form-data; name=\"documentDate\"${CRLF}${CRLF}".getBytes(StandardCharsets.UTF_8))
+      outputStream.write(documentDate.getBytes(StandardCharsets.UTF_8))
+      outputStream.write(CRLF.getBytes(StandardCharsets.UTF_8))
+
+      // Final boundary
+      outputStream.write("--${boundary}--${CRLF}".getBytes(StandardCharsets.UTF_8))
+
+      return outputStream.toByteArray()
+    } finally {
+      outputStream.close()
+    }
+  }
+
+  /**
+   * Cleans JSON response by removing leading/trailing quotes.
+   */
+  private static function cleanJsonResponse(response : String) : String {
+    var cleaned = response.trim()
+    if (cleaned.startsWith("\"") and cleaned.endsWith("\"")) {
+      cleaned = cleaned.substring(1, cleaned.length() - 1)
+    }
+    return cleaned
+  }
+
+  /**
+   * Creates and configures the API client with the necessary authentication.
+   * @return Configured Config instance for API clients
+   */
+  private static function createApiConfiguration() : Config {
+    return Config.builder()
+        .basePath(RUNTIME_PROPERTIES_GROUP.getStringProperty(PROP_DOCUSTORE_URL))
+        .interceptor(\request -> {
+          request.header("Content-Type", {"application/json; charset=utf-8"})
+          request.header("accept-encoding", {"UTF-8"})
+          request.header("Authorization", {"Bearer ${getAuthenticationToken()}"})
+        }).logLevel(Config.LogLevel.FULL).loggerName(LOGGER.Name)
+        .build()
+  }
+
+  /**
+   * Executes an operation with performance monitoring.
+   * @param operationName Name of the operation for logging
+   * @param operationDescription Description of the operation
+   * @param operation The operation to execute
+   * @return The result of the operation
+   */
+  private static function executeWithMonitoring<T>(
+      operationName : String,
+      operationDescription : String,
+      operation() : T
+  ) : T {
+    using (new PerformanceLoggingMonitor(operationDescription, "process=\"${operationName}\"")) {
+      return operation()
+    }
+  }
+
+  /**
+   * Retrieves an authentication token, using cached token if still valid.
+   * @return Valid authentication token
+   */
+  private static function getAuthenticationToken() : String {
+    if (System.currentTimeMillis() < _tokenExpirationTime) {
+      return _cachedAuthToken
+    }
+
+    if (TOKEN_REFRESH_LOCK.tryLock()) {
+      try {
+        // Double-check in case another thread updated the token while we were waiting
+        if (System.currentTimeMillis() < _tokenExpirationTime) {
+          return _cachedAuthToken
+        }
+
+        var tokenEndpoint = RUNTIME_PROPERTIES_GROUP.getStringProperty(PROP_TOKEN_URL)
+        var tokenScope = RUNTIME_PROPERTIES_GROUP.getStringProperty(PROP_TOKEN_SCOPE)
+        var tokenExpireIn = RUNTIME_PROPERTIES_GROUP.getIntegerProperty(PROP_TOKEN_EXPIRE_IN)
+        var secretKey = RUNTIME_PROPERTIES_GROUP.getStringProperty("secretKey")
+        var credentials = Plugins.get(gw.plugin.credentials.CredentialsPlugin).retrieveUsernameAndPassword(secretKey)
+        var clientId = credentials.Username
+        var clientSecret = credentials.Password
+
+        var tokenService = new OAuthTokenAuthorizer(clientId, clientSecret, tokenScope, tokenEndpoint)
+        _cachedAuthToken = tokenService.retrieveToken()
+
+        _tokenExpirationTime = System.currentTimeMillis() + TimeUnit.MINUTES.toMillis(tokenExpireIn)
+        return _cachedAuthToken
+      } finally {
+        TOKEN_REFRESH_LOCK.unlock()
+      }
+    }
+    if(_cachedAuthToken == null){
+      LOGGER.error("Authentication token not available", #getAuthenticationToken())
+      throw new IllegalStateException("Authentication token not available")
+    }
+    // Another thread is updating the token, wait and return the cached one
+    return _cachedAuthToken
+  }
+
+  /**
+   * Validates that a document ID is not null and is a valid number.
+   * @param documentId The document ID to validate
+   * @throws IllegalArgumentException if the document ID is invalid
+   */
+  private static function validateDocumentId(documentId : String) {
+    if (documentId == null || documentId.trim().isEmpty()) {
+      throw new IllegalArgumentException("Document ID cannot be null or empty")
+    }
+    try {
+      Long.parseLong(documentId)
+    } catch (e : NumberFormatException) {
+      throw new IllegalArgumentException("Document ID must be a valid number", e)
+    }
+  }
+
+  private static function getUpdateModel(documentDate : Date, keywordItems : List<Item>, documentTypeId : String, docExtention : String) : UpdateModel {
+    var keywords = new ArrayList<KeywordModel>()
+    keywordItems.each(\keyword -> {
+      var keywordmodel = new KeywordModel()
+      keywordmodel.setTypeId(Long.parseLong(keyword.getID()))
+      keywordmodel.setValue(keyword.getName())
+      keywords.add(keywordmodel)
+    })
+    var updatemodel = new UpdateModel()
+    updatemodel.setDocumentDate_JsonNullable(null)
+    updatemodel.setKeywords(keywords)
+    updatemodel.setTargetDocTypeId(Long.parseLong(documentTypeId))
+    updatemodel.setTargetFileTypeId(Long.parseLong(getFileTypeId(docExtention)))
+    return updatemodel
+  }
+
+  /**
+   * Pull the file type id from runtime properties, throw an exception if the file extension is empty or not supported
+   * @param docExtension
+   * @return the file type id as a string
+   */
+  private static function getFileTypeId(docExtension : String) : String{
+    var fileTypeId : String
+    if(docExtension == null or docExtension.Empty){
+      LOGGER.error("File extension cannot be null or empty", #getFileTypeId())
+      throw new IllegalArgumentException("File extension cannot be null or empty")
+    } else{
+      fileTypeId = RUNTIME_PROPERTIES_GROUP.getStringProperty(docExtension.toUpperCase())
+
+      if(fileTypeId == null or fileTypeId.Empty){
+        LOGGER.error("File extension not defined", #getFileTypeId())
+        throw new IllegalArgumentException("File extension not defined")
+      }
+    }
+
+    return fileTypeId
+  }
+}
+
