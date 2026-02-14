@@ -1,0 +1,395 @@
+package gw.payment
+
+uses com.google.common.base.Preconditions
+uses com.google.common.collect.Multimap
+uses com.google.common.collect.Ordering
+uses com.google.common.collect.TreeMultimap
+uses entity.BaseDistItem
+uses gw.api.system.BCConfigParameters
+uses gw.api.system.BCLoggerCategory
+uses gw.api.util.MoneyUtil
+uses gw.api.util.Ratio
+uses gw.api.web.payment.AllocationPool
+uses gw.api.web.payment.ReturnPremiumAllocationStrategy
+uses gw.bc.payment.InvoiceItemAllocationOrdering
+uses gw.pl.currency.MonetaryAmount
+uses java.math.BigDecimal
+
+@Export
+class ProportionalPrioritizeChargesAllocationStrategy_Ext implements ReturnPremiumAllocationStrategy {
+  
+  override property get TypeKey() : ReturnPremiumAllocateMethod {
+    return ReturnPremiumAllocateMethod.TC_PROPORTIONALPRIORITIZECHARGES_EXT
+  }
+
+  override function allocate(distItems : List<BaseDistItem>, amountToAllocate : AllocationPool) {
+    logDebug("Allocating: ${amountToAllocate.GrossAmount} (${distItems.Count} distItems)")
+    
+    if (distItems.Empty) {
+      logDebug("\tNo distItems")
+      return
+    }
+
+    validateDistItems(distItems)
+    
+    var positiveItems = distItems.where(\item -> item.InvoiceItem.Amount.IsPositive)
+    var negativeItems = distItems.where(\item -> item.InvoiceItem.Amount.IsNegative)
+    
+    logSummary(positiveItems, negativeItems)
+    
+    if (positiveItems.Empty or negativeItems.Empty) {
+      return
+    }
+
+    var negativeItemsMap = buildNegativeItemsMap(negativeItems)
+    var context = new AllocationContext(negativeItems[0])
+    
+    executeAllocationPhases(negativeItemsMap, positiveItems, context)
+  }
+
+  // ============================================================================
+  // Allocation Phases
+  // ============================================================================
+
+  private function executeAllocationPhases(
+      negativeItemsMap : Map<InvoiceItem, MonetaryAmount>,
+      positiveItems : List<BaseDistItem>,
+      context : AllocationContext) {
+    
+    logDebug("\tPhases:")
+
+    // Phase 1: Same ChargePattern
+    allocatePhase(
+        "1a) ChargePattern - Forward",
+        negativeItemsMap,
+        positiveItems.where(\item -> item.InvoiceItem.Charge.ChargePattern == context.ChargePattern),
+        new FirstToLastAllocationStrategy(),
+        false)
+
+    allocatePhase(
+        "1b) ChargePattern - Backward",
+        negativeItemsMap,
+        positiveItems.where(\item -> item.InvoiceItem.Charge.ChargePattern == context.ChargePattern),
+        new LastToFirstAllocationStrategy(),
+        true)
+
+    // Phase 2: Same Category and EffectiveLOB (different ChargePattern)
+    var lobItems = positiveItems.where(\item ->
+        item.InvoiceItem.Charge.ChargePattern.Category == context.Category &&
+        item.InvoiceItem.Charge.ChargePattern != context.ChargePattern &&
+        item.InvoiceItem.Charge.EffectiveLOB == context.EffectiveLOB)
+
+    allocatePhase("2a) EffectiveLOB - Forward", negativeItemsMap, lobItems,
+        new FirstToLastAllocationStrategy(), true)
+    allocatePhase("2b) EffectiveLOB - Backward", negativeItemsMap, lobItems,
+        new LastToFirstAllocationStrategy(), true)
+
+    // Phase 3: Same Category (different LOB and ChargePattern)
+    var categoryItems = positiveItems.where(\item ->
+        item.InvoiceItem.Charge.ChargePattern != context.ChargePattern &&
+        item.InvoiceItem.Charge.EffectiveLOB != context.EffectiveLOB &&
+        item.InvoiceItem.Charge.ChargePattern.Category == context.Category)
+
+    allocatePhase("3a) Category - Forward", negativeItemsMap, categoryItems,
+        new FirstToLastAllocationStrategy(), true)
+    allocatePhase("3b) Category - Backward", negativeItemsMap, categoryItems,
+        new LastToFirstAllocationStrategy(), true)
+
+    // Phase 4: All remaining (optional)
+    if (shouldAllocateRemaining()) {
+      allocatePhase("4) All - Backward", negativeItemsMap, positiveItems,
+          new LastToFirstAllocationStrategy(), true)
+    }
+  }
+
+  private function allocatePhase(
+      phaseName : String,
+      negativeItemsMap : Map<InvoiceItem, MonetaryAmount>,
+      positiveItems : List<BaseDistItem>,
+      allocationStrategy : AbstractAllocationStrategy,
+      allowPredated : boolean) {
+    
+    logDebug("\t\t${phaseName}")
+
+    if (positiveItems.Empty) {
+      logDebug("\t\t\tNo Eligible Positive Items To Allocate")
+      return
+    }
+
+    var totalAmount = calculateRemainingAmount(positiveItems)
+    if (!totalAmount.IsPositive) {
+      logDebug("\t\t\tNo Eligible Positive Items Amount To Allocate")
+      return
+    }
+
+    logPhaseDetails(positiveItems, negativeItemsMap, allocationStrategy)
+
+    var sortedPositiveItems = sortPositiveItems(positiveItems)
+    allocateToPositiveItems(negativeItemsMap, sortedPositiveItems, allowPredated)
+    
+    logPhaseResults(sortedPositiveItems)
+  }
+
+  private function allocateToPositiveItems(
+      negativeItemsMap : Map<InvoiceItem, MonetaryAmount>,
+      sortedPositiveItems : List<BaseDistItem>,
+      allowPredated : boolean) {
+    
+    for (negativeItem in negativeItemsMap.keySet().toList().orderBy(\item -> item.EventDate)) {
+      var amountAvailable = negativeItemsMap.get(negativeItem)
+      
+      if (amountAvailable.IsPositive) {
+        var remainingAmount = allocateNegativeItemToPositives(
+            negativeItem,
+            sortedPositiveItems,
+            amountAvailable,
+            allowPredated)
+        negativeItemsMap.put(negativeItem, remainingAmount)
+      }
+    }
+  }
+
+  private function allocateNegativeItemToPositives(
+      negativeItem : InvoiceItem,
+      positiveItems : List<BaseDistItem>,
+      amountAvailable : MonetaryAmount,
+      allowPredated : boolean) : MonetaryAmount {
+    
+    var originalAmount = amountAvailable
+    
+    var eligibleItems = allowPredated 
+        ? positiveItems
+        : positiveItems.where(isEligibleForPredatedPayment(negativeItem))
+    
+    var eligibleTotal = calculateRemainingAmount(eligibleItems)
+    
+    if (eligibleTotal.IsPositive) {
+      if (amountAvailable > eligibleTotal) {
+        payAllItemsInFull(eligibleItems)
+        amountAvailable = amountAvailable.subtract(eligibleTotal)
+      } else {
+        payAllItemsProRata(amountAvailable, eligibleItems, eligibleTotal)
+        amountAvailable = 0bd.ofCurrency(amountAvailable.Currency)
+      }
+    }
+
+    var amountAllocated = originalAmount.subtract(amountAvailable)
+    logDebug("\t\t\t\t${negativeItem.EventDate}: ${eligibleItems.Count} items: " +
+             "${originalAmount} - ${amountAllocated} = ${amountAvailable}")
+
+    return amountAvailable
+  }
+
+  // ============================================================================
+  // Pro-Rata Distribution
+  // ============================================================================
+
+  private function payAllItemsProRata(
+      amountToPay : MonetaryAmount,
+      distItems : Collection<BaseDistItem>,
+      totalUnpaid : MonetaryAmount) {
+    
+    var proRataRatio = Ratio.valueOf(amountToPay, totalUnpaid)
+    var amountDistributed = distributeProRata(distItems, proRataRatio, amountToPay.Currency)
+    var remainder = amountToPay - amountDistributed
+
+    distributeRemainder(distItems, remainder)
+  }
+
+  private function distributeProRata(
+      items : Collection<BaseDistItem>,
+      proRataRatio : Ratio,
+      currency : Currency) : MonetaryAmount {
+    
+    var amountDistributed = 0bd.ofCurrency(currency)
+    
+    for (item in items) {
+      var itemNeed = calculateItemNeed(item)
+      var itemRatio = proRataRatio.multiply(itemNeed.Amount)
+      var amountToApply = itemRatio.toMonetaryAmount(currency, DOWN)
+      
+      item.GrossAmountToApply = item.GrossAmountToApply + amountToApply
+      amountDistributed = amountDistributed + amountToApply
+    }
+    
+    return amountDistributed
+  }
+
+  private function distributeRemainder(distItems : Collection<BaseDistItem>, remainder : MonetaryAmount) {
+    var itemsArray = distItems.toArray(new BaseDistItem[distItems.size()])
+    itemsArray.sortBy(\item -> item.InvoiceItem.EventDate)
+    
+    var distribution = itemsArray*.GrossAmountToApply
+    var unsettledAmounts = itemsArray*.InvoiceItem*.GrossUnsettledAmount
+    
+    MoneyUtil.distributeRemainder(
+        remainder,
+        distribution,
+        unsettledAmounts,
+        BCConfigParameters.ProRataCalculationRemainderTreatment)
+    
+    updateDistribution(itemsArray, distribution)
+  }
+
+  private function updateDistribution(distItems : BaseDistItem[], distribution : MonetaryAmount[]) {
+    distItems.eachWithIndex(\item, index -> {
+      item.GrossAmountToApply = distribution[index]
+    })
+  }
+
+  // ============================================================================
+  // Helper Functions
+  // ============================================================================
+
+  private function buildNegativeItemsMap(negativeItems : List<BaseDistItem>) : Map<InvoiceItem, MonetaryAmount> {
+    var partition = TreeMultimap.create(
+        InvoiceItemAllocationOrdering.Util.getInvoiceItemOrderingsFromTypes({TC_EVENTDATE}),
+        Ordering.natural()) as Multimap<InvoiceItem, BaseDistItem>
+    
+    negativeItems.each(\item -> partition.put(item.InvoiceItem, item))
+
+    var itemsMap = new HashMap<InvoiceItem, MonetaryAmount>()
+    var currency = negativeItems.first().Currency
+    
+    partition.keySet().each(\invoiceItem -> {
+      var sum = partition.get(invoiceItem)
+          .sum(currency, \item -> item.GrossAmountOwed - item.GrossAmountToApply)
+          .negate()
+      itemsMap.put(invoiceItem, sum)
+    })
+    
+    return itemsMap
+  }
+
+  private function sortPositiveItems(items : List<BaseDistItem>) : List<BaseDistItem> {
+    return items
+        .orderBy(\item -> item.InvoiceItem.EventDate)
+        .thenBy(\item -> item.InvoiceItem.Charge.ChargePattern.ChargeCode)
+  }
+
+  private function isEligibleForPredatedPayment(negativeItem : InvoiceItem) : block(item : BaseDistItem) : boolean {
+    return \item -> {
+      var invoice = item.InvoiceItem.Invoice
+      return invoice.AmountDue_amt < BigDecimal.ZERO ||
+             item.InvoiceItem.EventDate.afterOrEqual(negativeItem.EventDate)
+    }
+  }
+
+  private function calculateRemainingAmount(items : List<BaseDistItem>) : MonetaryAmount {
+    return items.Empty 
+        ? 0bd.ofCurrency(items.first().Currency)
+        : items.sum(items.first().Currency, \item -> item.GrossAmountOwed - item.GrossAmountToApply)
+  }
+
+  private function calculateItemNeed(item : BaseDistItem) : MonetaryAmount {
+    return item.GrossAmountOwed - item.GrossAmountToApply
+  }
+
+  private function payAllItemsInFull(items : Collection<BaseDistItem>) {
+    items.each(\item -> {
+      item.GrossAmountToApply = item.GrossAmountOwed
+    })
+  }
+
+  private function validateDistItems(distItems : List<BaseDistItem>) {
+    var targetDist = distItems[0].BaseDist
+    Preconditions.checkArgument(
+        !distItems.hasMatch(\item -> item.BaseDist != targetDist),
+        "All dist items must belong to the same base dist.")
+  }
+
+  protected function shouldAllocateRemaining() : boolean {
+    return false
+  }
+
+  // ============================================================================
+  // Logging
+  // ============================================================================
+
+  private function logDebug(message : String) {
+    BCLoggerCategory.ALLOCATION_STRATEGY.debug(message)
+  }
+
+  private function logSummary(positiveItems : List<BaseDistItem>, negativeItems : List<BaseDistItem>) {
+    logDebug("\tSummary:")
+    
+    var positiveTotal = positiveItems.Empty 
+        ? 0bd.ofCurrency(positiveItems.first().Currency)
+        : positiveItems*.InvoiceItem.sum(\item -> item.Amount)
+    logDebug("\t\tPositive: ${positiveItems.Count} items (${positiveTotal})")
+    
+    if (!positiveItems.Empty) {
+      var chargePatterns = positiveItems*.InvoiceItem*.Charge*.ChargePattern
+          .toSet()*.DisplayName.toList().toTypedArray().join(", ")
+      logDebug("\t\tPositive Charge Patterns: ${chargePatterns}")
+    }
+
+    var negativeTotal = negativeItems.Empty
+        ? 0bd.ofCurrency(negativeItems.first().Currency)
+        : negativeItems*.InvoiceItem.sum(\item -> item.Amount)
+    logDebug("\t\tNegative: ${negativeItems.Count} items (${negativeTotal})")
+  }
+
+  private function logPhaseDetails(
+      positiveItems : List<BaseDistItem>,
+      negativeItemsMap : Map<InvoiceItem, MonetaryAmount>,
+      allocationStrategy : AbstractAllocationStrategy) {
+    
+    logDebug("\t\t\tAllocation: ${allocationStrategy}")
+    
+    var chargePatterns = positiveItems*.InvoiceItem*.Charge*.ChargePattern
+        .toSet()*.DisplayName.toList().toTypedArray().join(", ")
+    logDebug("\t\t\tEligible Charge Patterns: ${chargePatterns}")
+
+    var negativeTotal = negativeItemsMap.Values.sum()
+    logDebug("\t\t\tNegative Invoice Items: ${negativeItemsMap.Count} items (${negativeTotal})")
+
+    var positiveTotal = calculateRemainingAmount(positiveItems)
+    logDebug("\t\t\tPositive Invoice Items: ${positiveItems.Count} items (${positiveTotal})")
+  }
+
+  private function logPhaseResults(sortedItems : List<BaseDistItem>) {
+    sortedItems.each(\item -> {
+      var remaining = item.GrossAmountOwed - item.GrossAmountToApply
+      logDebug("\t\t\t\t${item.InvoiceItem.EventDate}: " +
+               "${item.InvoiceItem.Charge.ChargePattern.DisplayName} : " +
+               "${item.GrossAmountOwed} - ${item.GrossAmountToApply} = ${remaining}")
+    })
+    
+    var updatedTotal = calculateRemainingAmount(sortedItems)
+    logDebug("\t\t\tPositive Invoice Items (Updated Amount): ${updatedTotal}")
+  }
+
+  // ============================================================================
+  // Inner Class: Allocation Context
+  // ============================================================================
+
+  private static class AllocationContext {
+    var _chargePattern : ChargePattern
+    var _effectiveLOB : LOB
+    var _category : ChargeCategory
+
+    construct(firstNegativeItem : BaseDistItem) {
+      var charge = firstNegativeItem.InvoiceItem.Charge
+      _chargePattern = charge.ChargePattern
+      _effectiveLOB = charge.EffectiveLOB
+      _category = charge.ChargePattern.Category
+      
+      BCLoggerCategory.ALLOCATION_STRATEGY.debug("\t\tChargePattern: ${_chargePattern.DisplayName}")
+      BCLoggerCategory.ALLOCATION_STRATEGY.debug("\t\tEffectiveLOB: ${_effectiveLOB.DisplayName}")
+      BCLoggerCategory.ALLOCATION_STRATEGY.debug("\t\tCategory: ${_category.DisplayName}")
+    }
+
+    property get ChargePattern() : ChargePattern {
+      return _chargePattern
+    }
+
+    property get EffectiveLOB() : LOB {
+      return _effectiveLOB
+    }
+
+    property get Category() : ChargeCategory {
+      return _category
+    }
+  }
+}
