@@ -237,3 +237,35 @@ class ProportionalPrioritizeChargesAllocationStrategy_Ext implements ReturnPremi
     baseDistItemCollection.each( \ item -> {item.GrossAmountToApply = item.GrossAmountOwed})
   }
 }
+
+function getChangedFieldsSummary(sr : entity.ServiceRequest) : String {
+  var result = new StringBuilder()
+
+  if (sr == null or not sr.isChanged()) {
+    return "No changes detected."
+  }
+
+  var bundle = sr.Bundle
+  var originalBean = bundle.getOriginalBean(sr)
+
+  for (prop in sr.TypeInfo.Properties) {
+    if (!prop.IsWritable or prop.IsCalculated) {
+      continue
+    }
+
+    var fieldName = prop.Name
+    var newValue = sr.getFieldValue(fieldName)
+    var oldValue = originalBean != null ? originalBean.getFieldValue(fieldName) : null
+
+    if (newValue != oldValue) {
+      result.append(fieldName)
+            .append(": ")
+            .append(oldValue == null ? "null" : oldValue.toString())
+            .append(" -> ")
+            .append(newValue == null ? "null" : newValue.toString())
+            .append("\n")
+    }
+  }
+
+  return result.toString()
+}
