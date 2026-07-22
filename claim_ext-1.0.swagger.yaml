@@ -1,0 +1,442 @@
+swagger: "2.0"
+consumes:
+- application/json
+produces:
+- application/json
+x-gw-combine:
+- gw.content.cc.claim.v1.claim_content-1.0
+x-gw-schema-import:
+  claims: ext.claim.v1.claim_ext-1.0
+x-gw-apihandlers:
+- gw.rest.ext.cc.claim.v1.ClaimApiExtHandler
+paths:
+  "/claims/{claimId}/answers-ext":
+    parameters:
+    - $ref: "#/parameters/claimId"
+    get:
+      summary: "Retrieve a collection of answers on the Claim"
+      description: "Retrieve a collection of answers on the Claim"
+      operationId: getAnswersExt
+      x-gw-extensions:
+        childResourceType: AnswerExt
+        operationType: get-collection
+        resourceType: AnswersExt
+      x-gw-parameter-sets: get-collection
+      responses:
+        "200":
+          description: "Successful response"
+          schema:
+            $ref: "#/definitions/AnswerExtList"
+    post:
+      summary: "Create a new answer on the Claim"
+      description: "Create a new answer on the Claim"
+      operationId: createAnswerExt
+      x-gw-extensions:
+        childResourceType: AnswerExt
+        operationType: post-collection
+        resourceType: AnswersExt
+      parameters:
+      - name: body
+        in: body
+        required: true
+        schema:
+          $ref: "#/definitions/AnswerExtRequest"
+      x-gw-parameter-sets: post-collection
+      responses:
+        "201":
+          description: "The details of the newly-created AnswerExt"
+          schema:
+            $ref: "#/definitions/AnswerExtResponse"
+  "/claims/{claimId}/answers-ext/{answerExtId}":
+    parameters:
+    - $ref: "#/parameters/claimId"
+    - $ref: "#/parameters/answerExtId"
+    get:
+      summary: "Retrieve details of a answer on the Claim"
+      description: "Retrieve details of a answer on the Claim"
+      operationId: getAnswerExt
+      x-gw-extensions:
+        operationType: get-element
+        resourceType: AnswerExt
+      x-gw-parameter-sets: get-element
+      responses:
+        "200":
+          description: "Successful response"
+          schema:
+            $ref: "#/definitions/AnswerExtResponse"
+    patch:
+      summary: "Update an answer on the Claim"
+      description: "Update an answer on the Claim"
+      operationId: updateAnswerExt
+      x-gw-extensions:
+        operationType: patch-element
+        resourceType: AnswerExt
+      parameters:
+      - name: body
+        in: body
+        required: true
+        schema:
+          $ref: "#/definitions/AnswerExtRequest"
+      x-gw-parameter-sets: patch-element
+      responses:
+        "200":
+          description: "Successful response"
+          schema:
+            $ref: "#/definitions/AnswerExtResponse"
+    delete:
+      summary: "Delete a answer on the Claim"
+      description: "Delete a answer on the Claim"
+      operationId: deleteAnswerExt
+      x-gw-extensions:
+        operationType: delete-element
+        resourceType: AnswerExt
+      x-gw-parameter-sets: delete-element
+      responses:
+        "204":
+          description: "Successful deletion"
+  "/claims/{claimId}/digital-kickout-messages-ext":
+    parameters:
+    - $ref: "#/parameters/claimId"
+    get:
+      summary: "Retrieve a collection of kickout messages on the Claim"
+      description: "Retrieve a collection of kickout messages on the Claim"
+      operationId: getDigitalKickoutMessagesExt
+      x-gw-extensions:
+        childResourceType: DigitalKickoutMessageExt
+        operationType: get-collection
+        resourceType: DigitalKickoutMessagesExt
+      x-gw-parameter-sets: get-collection
+      responses:
+        "200":
+          description: "Successful response"
+          schema:
+            $ref: "#/definitions/DigitalKickoutMessageExtList"
+    post:
+      summary: "Create a new kickout message on the Claim"
+      description: "Create a new kickout message on the Claim"
+      operationId: createDigitalKickoutMessageExt
+      x-gw-extensions:
+        childResourceType: DigitalKickoutMessageExt
+        operationType: post-collection
+        resourceType: DigitalKickoutMessagesExt
+      parameters:
+      - name: body
+        in: body
+        required: true
+        schema:
+          $ref: "#/definitions/DigitalKickoutMessageExtRequest"
+      x-gw-parameter-sets: post-collection
+      responses:
+        "201":
+          description: "The details of the newly-created DigitalKickoutMessageExt"
+          schema:
+            $ref: "#/definitions/DigitalKickoutMessageExtResponse"
+  "/claims/{claimId}/digital-kickout-messages-ext/{digitalKickoutMessageExtId}":
+    parameters:
+    - $ref: "#/parameters/claimId"
+    - $ref: "#/parameters/digitalKickoutMessageExtId"
+    get:
+      summary: "Retrieve details of a kickout message on the Claim"
+      description: "Retrieve details of a kickout message on the Claim"
+      operationId: getDigitalKickoutMessageExt
+      x-gw-extensions:
+        operationType: get-element
+        resourceType: DigitalKickoutMessageExt
+      x-gw-parameter-sets: get-element
+      responses:
+        "200":
+          description: "Successful response"
+          schema:
+            $ref: "#/definitions/DigitalKickoutMessageExtResponse"
+    patch:
+      summary: "Update a kickout message on the Claim"
+      description: "Update a kickout message on the Claim"
+      operationId: updateDigitalKickoutMessageExt
+      x-gw-extensions:
+        operationType: patch-element
+        resourceType: DigitalKickoutMessageExt
+      parameters:
+      - name: body
+        in: body
+        required: true
+        schema:
+          $ref: "#/definitions/DigitalKickoutMessageExtRequest"
+      x-gw-parameter-sets: patch-element
+      responses:
+        "200":
+          description: "Successful response"
+          schema:
+            $ref: "#/definitions/DigitalKickoutMessageExtResponse"
+    delete:
+      summary: "Delete a kickout message on the Claim"
+      description: "Delete a kickout message on the Claim"
+      operationId: deleteDigitalKickoutMessageExt
+      x-gw-extensions:
+        operationType: delete-element
+        resourceType: DigitalKickoutMessageExt
+      x-gw-parameter-sets: delete-element
+      responses:
+        "204":
+          description: "Successful deletion"
+  "/claims/{claimId}/vehicle-incidents/{incidentId}/vehicle-incident-answers-ext":
+    parameters:
+    - $ref: "#/parameters/claimId"
+    - $ref: "#/parameters/incidentId"
+    get:
+      summary: "Retrieve a collection of vehicle incident answers"
+      description: "Retrieve a collection of vehicle incident answers"
+      operationId: getVehicleIncidentAnswersExt
+      x-gw-extensions:
+        childResourceType: VehicleIncidentAnswerExt
+        operationType: get-collection
+        resourceType: VehicleIncidentAnswersExt
+      x-gw-parameter-sets: get-collection
+      responses:
+        "200":
+          description: "Successful response"
+          schema:
+            $ref: "#/definitions/VehicleIncidentAnswerExtList"
+    post:
+      summary: "Create a new vehicle incident answer"
+      description: "Create a new vehicle incident answer"
+      operationId: createVehicleIncidentAnswerExt
+      x-gw-extensions:
+        childResourceType: VehicleIncidentAnswerExt
+        operationType: post-collection
+        resourceType: VehicleIncidentAnswersExt
+      parameters:
+      - name: body
+        in: body
+        required: true
+        schema:
+          $ref: "#/definitions/VehicleIncidentAnswerExtRequest"
+      x-gw-parameter-sets: post-collection
+      responses:
+        "201":
+          description: "The details of the newly-created VehicleIncidentAnswerExt"
+          schema:
+            $ref: "#/definitions/VehicleIncidentAnswerExtResponse"
+  "/claims/{claimId}/vehicle-incidents/{incidentId}/vehicle-incident-answers-ext/{vehicleIncidentAnswerExtId}":
+    parameters:
+    - $ref: "#/parameters/claimId"
+    - $ref: "#/parameters/incidentId"
+    - $ref: "#/parameters/vehicleIncidentAnswerExtId"
+    get:
+      summary: "Retrieve details of a vehicle incident answer"
+      description: "Retrieve details of a vehicle incident answer"
+      operationId: getVehicleIncidentAnswerExt
+      x-gw-extensions:
+        operationType: get-element
+        resourceType: VehicleIncidentAnswerExt
+      x-gw-parameter-sets: get-element
+      responses:
+        "200":
+          description: "Successful response"
+          schema:
+            $ref: "#/definitions/VehicleIncidentAnswerExtResponse"
+    patch:
+      summary: "Update a vehicle incident answer"
+      description: "Update a vehicle incident answer"
+      operationId: updateVehicleIncidentAnswerExt
+      x-gw-extensions:
+        operationType: patch-element
+        resourceType: VehicleIncidentAnswerExt
+      parameters:
+      - name: body
+        in: body
+        required: true
+        schema:
+          $ref: "#/definitions/VehicleIncidentAnswerExtRequest"
+      x-gw-parameter-sets: patch-element
+      responses:
+        "200":
+          description: "Successful response"
+          schema:
+            $ref: "#/definitions/VehicleIncidentAnswerExtResponse"
+    delete:
+      summary: "Delete a vehicle incident answer"
+      description: "Delete a vehicle incident answer"
+      operationId: deleteVehicleIncidentAnswerExt
+      x-gw-extensions:
+        operationType: delete-element
+        resourceType: VehicleIncidentAnswerExt
+      x-gw-parameter-sets: delete-element
+      responses:
+        "204":
+          description: "Successful deletion"
+
+
+parameters:
+  answerExtId:
+    name: answerExtId
+    in: path
+    description: "The REST identifier for the answer"
+    required: true
+    type: string
+  digitalKickoutMessageExtId:
+    name: digitalKickoutMessageExtId
+    in: path
+    description: "The REST identifier for the digital kickout message ext"
+    required: true
+    type: string
+  vehicleIncidentAnswerExtId:
+    name: vehicleIncidentAnswerExtId
+    in: path
+    description: "The REST identifier for the vehicle incident answer"
+    required: true
+    type: string
+definitions:
+  AnswerExtData:
+    x-gw-extend:
+    - "#/definitions/DataEnvelope"
+    required:
+    - attributes
+    properties:
+      attributes:
+        $ref: "claims#/definitions/AnswerExt"
+  AnswerExtList:
+    type: object
+    x-gw-extend:
+    - "#/definitions/DataListEnvelope"
+    properties:
+      data:
+        type: array
+        items:
+          $ref: "#/definitions/AnswerExtData"
+      included:
+        $ref: "#/definitions/ClaimResponseInclusions"
+  AnswerExtRequest:
+    type: object
+    required:
+      - data
+    properties:
+      data:
+        $ref: "#/definitions/AnswerExtData"
+      included:
+        $ref: "#/definitions/ClaimRequestInclusions"
+  AnswerExtResponse:
+    type: object
+    properties:
+      data:
+        $ref: "#/definitions/AnswerExtData"
+      included:
+        $ref: "#/definitions/ClaimResponseInclusions"
+  VendorData:
+      type: object
+      properties:
+        vendorId:
+          type: string
+
+  CreateVendorData:
+    x-gw-extend:
+      - "#/definitions/DataEnvelope"
+    required: [ attributes ]
+    properties:
+      attributes:
+        $ref: "#/definitions/VendorData"
+
+  CreateVendorResponse:
+    type: object
+    properties:
+      data:
+        $ref: "#/definitions/CreateVendorData"
+  ClaimRequestInclusions:
+    type: object
+    properties:
+      AnswerExt:
+        type: array
+        items:
+          $ref: "#/definitions/AnswerExtData"
+      DigitalKickoutMessageExt:
+        type: array
+        items:
+          $ref: "#/definitions/DigitalKickoutMessageExtData"
+      VehicleIncidentAnswerExt:
+        type: array
+        items:
+          $ref: "#/definitions/VehicleIncidentAnswerExtData"
+  ClaimResponseInclusions:
+    type: object
+    properties:
+      AnswerExt:
+        type: array
+        items:
+          $ref: "#/definitions/AnswerExtData"
+      DigitalKickoutMessageExt:
+        type: array
+        items:
+          $ref: "#/definitions/DigitalKickoutMessageExtData"
+      VehicleIncidentAnswerExt:
+        type: array
+        items:
+          $ref: "#/definitions/VehicleIncidentAnswerExtData"
+  DigitalKickoutMessageExtData:
+    x-gw-extend:
+    - "#/definitions/DataEnvelope"
+    required:
+    - attributes
+    properties:
+      attributes:
+        $ref: "claims#/definitions/DigitalKickoutMessageExt"
+  DigitalKickoutMessageExtList:
+    type: object
+    x-gw-extend:
+    - "#/definitions/DataListEnvelope"
+    properties:
+      data:
+        type: array
+        items:
+          $ref: "#/definitions/DigitalKickoutMessageExtData"
+      included:
+        $ref: "#/definitions/ClaimResponseInclusions"
+  DigitalKickoutMessageExtRequest:
+    type: object
+    required:
+    - data
+    properties:
+      data:
+        $ref: "#/definitions/DigitalKickoutMessageExtData"
+      included:
+        $ref: "#/definitions/ClaimRequestInclusions"
+  DigitalKickoutMessageExtResponse:
+    type: object
+    properties:
+      data:
+        $ref: "#/definitions/DigitalKickoutMessageExtData"
+      included:
+        $ref: "#/definitions/ClaimResponseInclusions"
+  VehicleIncidentAnswerExtData:
+    x-gw-extend:
+    - "#/definitions/DataEnvelope"
+    required:
+    - attributes
+    properties:
+      attributes:
+        $ref: "claims#/definitions/VehicleIncidentAnswerExt"
+  VehicleIncidentAnswerExtList:
+    type: object
+    x-gw-extend:
+    - "#/definitions/DataListEnvelope"
+    properties:
+      data:
+        type: array
+        items:
+          $ref: "#/definitions/VehicleIncidentAnswerExtData"
+      included:
+        $ref: "#/definitions/ClaimResponseInclusions"
+  VehicleIncidentAnswerExtRequest:
+    type: object
+    required:
+    - data
+    properties:
+      data:
+        $ref: "#/definitions/VehicleIncidentAnswerExtData"
+      included:
+        $ref: "#/definitions/ClaimRequestInclusions"
+  VehicleIncidentAnswerExtResponse:
+    type: object
+    properties:
+      data:
+        $ref: "#/definitions/VehicleIncidentAnswerExtData"
+      included:
+        $ref: "#/definitions/ClaimResponseInclusions"

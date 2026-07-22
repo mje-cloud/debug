@@ -1,0 +1,1060 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "x-gw-import": {
+    "shared": "coop.shared.shared_coop_ext-1.0"
+  },
+  "definitions": {
+    "ClaimDolChangeRequest": {
+      "type": "object",
+      "properties": {
+        "lossDate": {
+          "title": "Loss date",
+          "description": "The date and time when the loss occurred",
+          "type": "string",
+          "format": "date-time"
+        }
+      }
+    },
+    "ClaimDolChangeResponse": {
+      "type": "object",
+      "properties": {
+        "claimId": {
+          "title": "Claim Id",
+          "description": "Claim Id",
+          "type": "string"
+        },
+        "claimNumber": {
+          "title": "Claim Number",
+          "description": "Claim Number",
+          "type": "string"
+        },
+        "lossDate": {
+          "title": "Loss date",
+          "description": "The date and time when the loss occurred",
+          "type": "string",
+          "format": "date-time"
+        }
+      }
+    },
+    "RentalLocationSearchRequest": {
+      "title": "Rental Location Search Attributes",
+      "description": "Attributes to search Rental Location",
+      "type": "object",
+      "properties": {
+        "addressLine1": {
+          "title": "Address line 1",
+          "description": "The first line of the address",
+          "type": "string"
+        },
+        "addressLine2": {
+          "title": "Address line 2",
+          "description": "The second line of the address",
+          "type": "string"
+        },
+        "city": {
+          "title": "City",
+          "description": "The city",
+          "type": "string"
+        },
+        "province": {
+          "title": "Province",
+          "description": "The province of the address.",
+          "type": "string"
+        },
+        "postalCode": {
+          "title": "Postal Code",
+          "description": "Postal Code for the Service Vendor Location Search",
+          "type": "string",
+          "x-gw-extensions": {
+            "requiredForCreate": true
+          }
+        }
+      }
+    },
+    "RentalLocationSearchResponse": {
+      "title": "RentalLocation SearchResult Attributes",
+      "description": "RentalLocation SearchResult Attributes",
+      "type": "object",
+      "properties": {
+        "rentalCompany": {
+          "title": "rentalCompany",
+          "description": "Rental Company",
+          "type": "string"
+        },
+        "rentalBranchName": {
+          "title": "Rental BranchName",
+          "description": "Rental BranchName",
+          "type": "string"
+        },
+        "branchId": {
+          "title": "BranchId",
+          "description": "BranchId",
+          "type": "string"
+        },
+        "phoneNumber": {
+          "title": "phoneNumber",
+          "description": "phoneNumber",
+          "type": "string"
+        },
+        "distanceAway": {
+          "title": "Rental location distance away from search location address",
+          "description": "Rental location distance away from search location address",
+          "type": "string"
+        },
+        "vendorAddress": {
+          "title": "Rental Location Address",
+          "description": "Rental Location Address",
+          "$ref": "#/definitions/ServiceVendorAddress"
+        },
+        "branchHours": {
+          "title": "Rental location hours",
+          "description": "Rental location hours",
+          "type": "string"
+        }
+      }
+    },
+    "ServiceVendorAddress": {
+      "type": "object",
+      "properties": {
+        "addressLine1": {
+          "title": "Rental Location Address 1",
+          "description": "The address line 1 of Rental Location.",
+          "type": "string"
+        },
+        "addressLine2": {
+          "title": "Rental Location Address 2",
+          "description": "The address line 2 of Rental Location.",
+          "type": "string"
+        },
+        "city": {
+          "title": "Rental Location City",
+          "description": "The city of Rental Location.",
+          "type": "string"
+        },
+        "latitude": {
+          "title": "Latitude",
+          "description": "The latitude coordinate of Rental Location.",
+          "type": "string"
+        },
+        "longitude": {
+          "title": "Longitude",
+          "description": "The longitude coordinate of Rental Location.",
+          "type": "string"
+        },
+        "province": {
+          "title": "Province",
+          "description": "The province name of Rental Location.",
+          "type": "string"
+        },
+        "postalCode": {
+          "title": "Postal Code",
+          "description": "The postal code of Rental Location.",
+          "type": "string"
+        }
+      }
+    },
+    "AutoRentalBookingRequest": {
+      "title": "Auto RentalBooking request parameters",
+      "description": "Attributes to book auto rental",
+      "type": "object",
+      "properties": {
+        "rentalCompany": {
+          "title": "rentalCompany",
+          "description": "rentalCompany - Digital to get this value from Location Search response",
+          "type": "string",
+          "x-gw-extensions": {
+            "requiredForCreate": true
+          }
+        },
+        "branchId": {
+          "title": "ID of selected Branch",
+          "description": "BranchId - Digital to get this value from Location Search response",
+          "type": "string",
+          "x-gw-extensions": {
+            "requiredForCreate": true
+          }
+        },
+        "postalCode": {
+          "title": "Postal Code",
+          "description": "The postal code of Renter.",
+          "type": "string",
+          "x-gw-extensions": {
+            "requiredForCreate": true
+          }
+        }
+      }
+    },
+    "AutoRentalBookingResponse": {
+      "title": "AutoRentalBooking response parameters",
+      "description": "AutoRentalBooking response parameters",
+      "type": "object",
+      "properties": {
+        "serviceRequestNumber": {
+          "title": "ServiceRequestNumber",
+          "description": "ServiceRequestNumber",
+          "type": "string"
+        },
+        "claimNumber": {
+          "title": "ClaimNumber",
+          "description": "ClaimNumber",
+          "type": "string"
+        },
+        "vehicleIncidentId": {
+          "title": "vehicleIncidentId",
+          "description": "vehicleIncident publicid",
+          "type": "string"
+        },
+        "rentalCompany": {
+          "title": "rentalCompany",
+          "description": "rentalCompany - Digital to get this value from Location Search response",
+          "type": "string"
+        },
+        "rentalBranchName": {
+          "title": "Rental BranchName",
+          "description": "rentalBranchName - Digital to get this value from Location Search response",
+          "type": "string"
+        },
+        "branchId": {
+          "title": "BranchId",
+          "description": "BranchId - Digital to get this value from Location Search response",
+          "type": "string",
+          "x-gw-extensions": {
+            "requiredForCreate": true
+          }
+        },
+        "vendorAddress": {
+          "title": "Rental Location Address",
+          "description": "Rental Location Address",
+          "$ref": "#/definitions/ServiceVendorAddress"
+        },
+        "phoneNumber": {
+          "title": "RentalBranch Phone number",
+          "description": "RentalBranch Phone number",
+          "type": "string"
+        },
+        "vehicleClass": {
+          "title": "Rental vehicleClass",
+          "description": "Rental vehicleClass",
+          "type": "string"
+        }
+      }
+    },
+    "EstimateRequest": {
+      "type": "object",
+      "properties": {
+        "availabilityId": {
+          "title": "Availability Id",
+          "description": "The vendor availability ID (for cases where a vendor availability has been reserved)",
+          "type": "string"
+        },
+        "id": {
+          "title": "Vendor ID",
+          "description": "The Service vendor Id in ProgiSync.",
+          "type": "integer"
+        },
+        "reservationKey": {
+          "title": "Reservation Key",
+          "description": "The vendor Reservation Key (for cases where a vendor availability has been reserved)",
+          "type": "string"
+        },
+        "vendorId": {
+          "title": "Vendor ID",
+          "description": "The vendorId in GW CC represents the Mitchell ID.",
+          "type": "integer"
+        }
+      }
+    },
+    "EstimateResponse": {
+      "type": "object",
+      "properties": {
+        "appointmentId": {
+          "title": "Appointment Id",
+          "description": "The Id of the appointment booked in ProgiSync.",
+          "type": "string"
+        },
+        "appointmentStatus": {
+          "title": "Appointment Status",
+          "description": "The status of the appointment booked in ProgiSync.",
+          "type": "string"
+        },
+        "appraisalAssignmentStatus": {
+          "title": "Appraisal Assignment Status",
+          "description": "The appraisal assignment status",
+          "type": "string"
+        },
+        "claimNumber": {
+          "title": "Claim Number",
+          "description": "The Claim Number",
+          "type": "string"
+        },
+        "id": {
+          "title": "Vendor ID",
+          "description": "The vendor Id in ProgySync.",
+          "type": "integer"
+        },
+        "vendorId": {
+          "title": "Vendor ID",
+          "description": "The vendorId in GW CC represents the Mitchell ID.",
+          "type": "integer"
+        }
+      }
+    },
+    "ClaimSalesForceRequest": {
+      "type": "object",
+      "properties": {
+        "claimNumber": {
+          "title": "claimNumber",
+          "description": "claimNumber",
+          "type": "string"
+        }
+      }
+    },
+    "ClaimSalesForceResponse": {
+      "type": "object",
+      "properties": {
+        "claim": {
+          "title": "claim",
+          "description": "claim",
+          "$ref": "#/definitions/Claim_Ext"
+        },
+        "contacts": {
+          "title": "contacts",
+          "description": "contacts",
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/Contact_Ext"
+          }
+        }
+      }
+    },
+    "Contact_Ext": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "title": "id",
+          "description": "id",
+          "type": "string"
+        },
+        "firstName": {
+          "title": "firstName",
+          "description": "firstName",
+          "type": "string"
+        },
+        "name": {
+          "title": "name",
+          "description": "name",
+          "type": "string"
+        },
+        "lastName": {
+          "title": "lastName",
+          "description": "lastName",
+          "type": "string"
+        },
+        "middleName": {
+          "title": "middleName",
+          "description": "middleName",
+          "type": "string"
+        },
+        "licenseNumber": {
+          "title": "licenseNumber",
+          "description": "licenseNumber",
+          "type": "string"
+        },
+        "licenseState": {
+          "title": "licenseNumber",
+          "description": "licenseNumber",
+          "type": "string"
+        },
+        "workNumber": {
+          "title": "workNumber",
+          "description": "workNumber",
+          "type": "string"
+        },
+        "workNumberExt": {
+          "title": "workNumber",
+          "description": "workNumber",
+          "type": "string"
+        },
+        "emailAddress1": {
+          "title": "emailAddress1",
+          "description": "emailAddress1",
+          "type": "string"
+        },
+        "primaryPhone": {
+          "title": "primaryPhone",
+          "description": "primaryPhone",
+          "type": "string"
+        },
+        "primaryPhoneType": {
+          "title": "The Primary Phone Type",
+          "description": "It contains one of the primary phone typecodes available in PrimaryPhoneType typelist",
+          "type": "string"
+        },
+        "addressLine1": {
+          "title": "addressLine1",
+          "description": "addressLine1",
+          "type": "string"
+        },
+        "addressLine2": {
+          "title": "addressLine1",
+          "description": "addressLine1",
+          "type": "string"
+        },
+        "city": {
+          "title": "city",
+          "description": "city",
+          "type": "string"
+        },
+        "state": {
+          "title": "state",
+          "description": "state",
+          "type": "string"
+        },
+        "country": {
+          "title": "country",
+          "description": "country",
+          "type": "string"
+        },
+        "postalCode": {
+          "title": "postalCode",
+          "description": "postalCode",
+          "type": "string"
+        }
+      }
+    },
+    "Claim_Ext": {
+      "type": "object",
+      "properties": {
+        "claimNumber": {
+          "title": "claimNumber",
+          "description": "claimNumber",
+          "type": "string"
+        },
+        "claimStatus": {
+          "title": "claimStatus",
+          "description": "claimStatus",
+          "type": "string"
+        },
+        "adjuster": {
+          "title": "adjusterContact",
+          "description": "adjusterContact",
+          "$ref": "#/definitions/ID_Ext"
+        },
+        "createUser": {
+          "title": "createUser",
+          "description": "createUser",
+          "$ref": "#/definitions/ID_Ext"
+        },
+        "reportedDate": {
+          "title": "reportedDate",
+          "description": "reportedDate",
+          "type": "string",
+          "format": "date-time"
+        },
+        "lossDate": {
+          "title": "lossDate",
+          "description": "lossDate",
+          "type": "string",
+          "format": "date-time"
+        },
+        "closeDate": {
+          "title": "closeDate",
+          "description": "closeDate",
+          "type": "string",
+          "format": "date-time"
+        },
+        "createTime": {
+          "title": "createTime",
+          "description": "createTime",
+          "type": "string",
+          "format": "date-time"
+        },
+        "updateTime": {
+          "title": "updateTime",
+          "description": "updateTime",
+          "type": "string",
+          "format": "date-time"
+        },
+        "lossCause": {
+          "title": "lossCause",
+          "description": "lossCause",
+          "type": "string"
+        },
+        "kindOfLoss": {
+          "title": "kindOfLoss",
+          "description": "kindOfLoss",
+          "type": "string"
+        },
+        "description": {
+          "title": "description",
+          "description": "description",
+          "type": "string"
+        },
+        "lossLocation": {
+          "title": "lossLocation",
+          "description": "lossLocation",
+          "$ref": "#/definitions/LossLocation_Ext"
+        },
+        "catastropheNumber": {
+          "title": "catastropheNumber",
+          "description": "catastropheNumber",
+          "type": "string"
+        },
+        "mainContact": {
+          "title": "mainContact",
+          "description": "mainContact",
+          "$ref": "#/definitions/ID_Ext"
+        },
+        "mainContactType": {
+          "title": "mainContactType",
+          "description": "mainContactType",
+          "type": "string"
+        },
+        "productCode": {
+          "title": "productCode",
+          "description": "productCode",
+          "type": "string"
+        },
+        "reportedBy": {
+          "title": "reportedBy",
+          "description": "reportedBy",
+          "$ref": "#/definitions/ID_Ext"
+        },
+        "howReported": {
+          "title": "howReported",
+          "description": "howReported",
+          "type": "string"
+        },
+        "fnolStatus": {
+          "title": "fnolStatus",
+          "description": "fnolStatus",
+          "type": "boolean"
+        },
+        "fatalityInvolved": {
+          "title": "fatalityInvolved",
+          "description": "fatalityInvolved",
+          "type": "boolean"
+        },
+        "injuriesPresent": {
+          "title": "injuriesPresent",
+          "description": "injuriesPresent",
+          "type": "boolean"
+        },
+        "rateImpact": {
+          "title": "rateImpact",
+          "description": "rateImpact",
+          "type": "boolean"
+        },
+        "nextStep": {
+          "title": "claimNumber",
+          "description": "claimNumber",
+          "type": "string"
+        },
+        "whoToCall": {
+          "title": "whoToCall",
+          "description": "whoToCall",
+          "type": "string"
+        },
+        "madeInitialContactWithInsuredDate": {
+          "title": "madeInitialContactWithInsuredDate",
+          "description": "madeInitialContactWithInsuredDate",
+          "type": "string",
+          "format": "date-time"
+        },
+        "madeInitialContactWithInsuredEmployeeNumber": {
+          "title": "madeInitialContactWithInsuredEmployeeNumber",
+          "description": "madeInitialContactWithInsuredEmployeeNumber",
+          "type": "string"
+        },
+        "madeInitialContactWithInsuredName": {
+          "title": "madeInitialContactWithInsuredEmployeeNumber",
+          "description": "madeInitialContactWithInsuredEmployeeNumber",
+          "$ref": "#/definitions/ID_Ext"
+        },
+        "faultRating": {
+          "title": "faultRating",
+          "description": "faultRating",
+          "type": "string"
+        },
+        "assignmentDate": {
+          "title": "assignmentDate",
+          "description": "assignmentDate",
+          "type": "string",
+          "format": "date-time"
+        },
+        "assignToIndepAdj_CG": {
+          "title": "assignToIndepAdj_CG",
+          "description": "assignToIndepAdj_CG",
+          "type": "boolean"
+        },
+        "policy": {
+          "title": "policy",
+          "description": "policy",
+          "$ref": "#/definitions/Policy_Ext"
+        },
+        "incidents": {
+          "title": "incidents",
+          "description": "incidents",
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/Incident_Ext"
+          }
+        },
+        "exposures": {
+          "title": "exposures",
+          "description": "exposures",
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/Exposure_Ext"
+          }
+        },
+        "claimStatusEvents": {
+          "title": "claimStatusEvents",
+          "description": "claimStatusEvents",
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/ClaimStatusEvents_Ext"
+          }
+        }
+      }
+    },
+    "Policy_Ext": {
+      "type": "object",
+      "properties": {
+        "policyNumber": {
+          "title": "policyNumber",
+          "description": "policyNumber",
+          "type": "string"
+        },
+        "hvi": {
+          "title": "hvi",
+          "description": "hvi",
+          "type": "string"
+        },
+        "policyKeyInfo_Ext": {
+          "title": "policyKeyInfo_Ext",
+          "description": "policyKeyInfo_Ext",
+          "type": "string"
+        },
+        "producerCode": {
+          "title": "producerCode",
+          "description": "producerCode",
+          "type": "string"
+        }
+      }
+    },
+    "LossLocation_Ext": {
+      "type": "object",
+      "properties": {
+        "addressLine1": {
+          "title": "addressLine1",
+          "description": "addressLine1",
+          "type": "string"
+        },
+        "addressLine2": {
+          "title": "addressLine2",
+          "description": "addressLine2",
+          "type": "string"
+        },
+        "city": {
+          "title": "city",
+          "description": "city",
+          "type": "string"
+        },
+        "state": {
+          "title": "state",
+          "description": "state",
+          "type": "string"
+        },
+        "country": {
+          "title": "country",
+          "description": "country",
+          "type": "string"
+        },
+        "postalCode": {
+          "title": "postalCode",
+          "description": "postalCode",
+          "type": "string"
+        }
+      }
+    },
+    "Incident_Ext": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "title": "id",
+          "description": "id",
+          "type": "string"
+        },
+        "damageDescription": {
+          "title": "damageDescription",
+          "description": "damageDescription",
+          "type": "string"
+        },
+        "driver": {
+          "title": "driver",
+          "description": "driver",
+          "$ref": "#/definitions/ID_Ext"
+        },
+        "excludedDriver": {
+          "title": "excludedDriver",
+          "description": "excludedDriver",
+          "type": "boolean"
+        },
+        "listedDriver": {
+          "title": "listedDriver",
+          "description": "listedDriver",
+          "type": "string"
+        },
+        "subtype": {
+          "title": "subtype",
+          "description": "subtype",
+          "type": "string"
+        },
+        "fitForOccupancy": {
+          "title": "fitForOccupancy",
+          "description": "fitForOccupancy",
+          "type": "boolean"
+        },
+        "totalLoss": {
+          "title": "totalLoss",
+          "description": "totalLoss",
+          "type": "string"
+        },
+        "severityTypeInj": {
+          "title": "severityTypeInj",
+          "description": "severityTypeInj",
+          "type": "string"
+        },
+        "claimaintType": {
+          "title": "claimaintType",
+          "description": "claimaintType",
+          "type": "string"
+        },
+        "appraisalReqd": {
+          "title": "appraisalReqd",
+          "description": "appraisalReqd",
+          "type": "boolean"
+        },
+        "independentAppraiserUsed": {
+          "title": "independentAppraiserUsed",
+          "description": "independentAppraiserUsed",
+          "type": "boolean"
+        },
+        "rentalEndDate": {
+          "title": "rentalEndDate",
+          "description": "rentalEndDate",
+          "type": "string",
+          "format": "date-time"
+        },
+        "vehicle": {
+          "title": "vehicle",
+          "description": "vehicle",
+          "$ref": "#/definitions/Vehicle_Ext"
+        }
+      }
+    },
+    "Exposure_Ext": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "title": "id",
+          "description": "id",
+          "type": "string"
+        },
+        "coverageType": {
+          "title": "coverageType",
+          "description": "coverageType",
+          "type": "string"
+        },
+        "exposureType": {
+          "title": "exposureType",
+          "description": "exposureType",
+          "type": "string"
+        },
+        "status": {
+          "title": "status",
+          "description": "status",
+          "type": "string"
+        },
+        "createTime": {
+          "title": "createTime",
+          "description": "createTime",
+          "type": "string",
+          "format": "date-time"
+        },
+        "carRentalEndDate": {
+          "title": "carRentalEndDate",
+          "description": "carRentalEndDate",
+          "type": "string",
+          "format": "date-time"
+        }
+      }
+    },
+    "ClaimStatusEvents_Ext": {
+      "type": "object",
+      "properties": {
+        "eventCreationTime": {
+          "title": "eventCreationTime",
+          "description": "eventCreationTime",
+          "type": "string",
+          "format": "date-time"
+        },
+        "reportedDate": {
+          "title": "reportedDate",
+          "description": "reportedDate",
+          "type": "string",
+          "format": "date-time"
+        },
+        "dateOfLoss": {
+          "title": "dateOfLoss",
+          "description": "dateOfLoss",
+          "type": "string",
+          "format": "date-time"
+        },
+        "claimClosedDate": {
+          "title": "claimClosedDate",
+          "description": "claimClosedDate",
+          "type": "string",
+          "format": "date-time"
+        },
+        "rentalCarEligible": {
+          "title": "rentalCarEligible",
+          "description": "rentalCarEligible",
+          "type": "boolean"
+        },
+        "eligibleDollarAmount": {
+          "title": "eligibleDollarAmount",
+          "description": "eligibleDollarAmount",
+          "type": "string",
+          "format": "gw-bigdecimal"
+        },
+        "deductibleAmount": {
+          "title": "deductibleAmount",
+          "description": "deductibleAmount",
+          "type": "string",
+          "format": "gw-bigdecimal"
+        },
+        "status": {
+          "title": "status",
+          "description": "status",
+          "type": "string"
+        },
+        "jobType": {
+          "title": "jobType",
+          "description": "jobType",
+          "type": "string"
+        },
+        "totalLoss": {
+          "title": "totalLoss",
+          "description": "totalLoss",
+          "type": "boolean"
+        },
+        "eventName": {
+          "title": "eventName",
+          "description": "eventName",
+          "type": "string"
+        },
+        "dtoType": {
+          "title": "dtoType",
+          "description": "dtoType",
+          "type": "string"
+        },
+        "serviceRequestNumber": {
+          "title": "serviceRequestNumber",
+          "description": "serviceRequestNumber",
+          "type": "string"
+        },
+        "serviceRequestProgress": {
+          "title": "serviceRequestProgress",
+          "description": "serviceRequestProgress",
+          "type": "string"
+        },
+        "repairStatus": {
+          "title": "repairStatus",
+          "description": "repairStatus",
+          "type": "string"
+        },
+        "vehicleInformation": {
+          "title": "vehicleInformation",
+          "description": "VehicleInformation",
+          "$ref": "#/definitions/Vehicle_Ext"
+        },
+        "vendorContactInformation": {
+          "title": "vendorContactInformation",
+          "description": "vehicleInformation",
+          "$ref": "#/definitions/ID_Ext"
+        },
+        "vendorAddress": {
+          "title": "vendorAddress",
+          "description": "vendorAddress",
+          "$ref": "#/definitions/AddressDTO_Ext"
+        },
+        "assignedUser": {
+          "title": "assignedUser",
+          "description": "assignedUser",
+          "$ref": "#/definitions/ID_Ext"
+        },
+        "exposure": {
+          "title": "exposure",
+          "description": "exposure",
+          "$ref": "#/definitions/Exposure_Ext"
+        },
+        "vehicle": {
+          "title": "vehicle",
+          "description": "vehicle",
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/Vehicle_Ext"
+          }
+        },
+        "property_CG": {
+          "title": "Property_CG",
+          "description": "Property_CG",
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/Property_Ext"
+          }
+        },
+        "vendor": {
+          "title": "vendor",
+          "description": "vendor",
+          "$ref": "#/definitions/ID_Ext"
+        },
+        "repairEstimateTime": {
+          "title": "repairEstimateTime",
+          "description": "repairEstimateTime",
+          "type": "integer"
+        }
+      }
+    },
+    "Vehicle_Ext": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "title": "id",
+          "description": "id",
+          "type": "string"
+        },
+        "make": {
+          "title": "make",
+          "description": "make",
+          "type": "string"
+        },
+        "model": {
+          "title": "model",
+          "description": "model",
+          "type": "string"
+        },
+        "vin": {
+          "title": "vin",
+          "description": "vin",
+          "type": "string"
+        },
+        "year": {
+          "title": "year",
+          "description": "year",
+          "type": "integer"
+        },
+        "annualMileage": {
+          "title": "year",
+          "description": "year",
+          "type": "integer"
+        }
+      }
+    },
+    "ID_Ext": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "title": "id",
+          "description": "id",
+          "type": "string"
+        }
+      }
+    },
+    "Property_Ext": {
+      "type": "object",
+      "properties": {
+        "propertyAddress": {
+          "title": "propertyAddress",
+          "description": "propertyAddress",
+          "$ref": "#/definitions/AddressDTO_Ext"
+        }
+      }
+    },
+    "AddressDTO_Ext": {
+      "type": "object",
+      "properties": {
+        "addressLine1": {
+          "title": "addressLine1",
+          "description": "addressLine1",
+          "type": "string"
+        },
+        "addressLine2": {
+          "title": "addressLine2",
+          "description": "addressLine2",
+          "type": "string"
+        },
+        "addressLine3": {
+          "title": "addressLine3",
+          "description": "addressLine3",
+          "type": "string"
+        },
+        "city": {
+          "title": "city",
+          "description": "city",
+          "type": "string"
+        },
+        "state": {
+          "title": "state",
+          "description": "state",
+          "type": "string"
+        },
+        "postalCode": {
+          "title": "postalCode",
+          "description": "postalCode",
+          "type": "string"
+        },
+        "country": {
+          "title": "country",
+          "description": "country",
+          "type": "string"
+        }
+      }
+    },
+    "EvaluateRulesResponse": {
+      "type": "object",
+      "properties": {
+        "repairEligibilityStatus": {
+          "title": "Repair Eligibility Status",
+          "description": "The Repair Eligibility Status of a Vehicle Incident.",
+          "$ref": "shared#/definitions/TypeKeyReference",
+          "x-gw-extensions": {
+            "typelist": "RepairEligibilityStatus_EXT"
+          }
+        },
+        "rentalEligibilityStatus": {
+          "title": "Rental Eligibility Status",
+          "description": "The Rental Eligibility Status of a Vehicle Incident.",
+          "$ref": "shared#/definitions/TypeKeyReference",
+          "x-gw-extensions": {
+            "typelist": "RentalEligibilityStatus_EXT"
+          }
+        }
+      }
+    },
+    "CreateVendorResponse": {
+      "title": "CreateVendorResponse",
+      "description": "CreateVendorResponse",
+      "type": "object",
+      "properties": {
+        "vendorId": {
+          "title": "vendorId",
+          "description": "vendorId",
+          "type": "string"
+        }
+      }
+    }
+  }
+}
